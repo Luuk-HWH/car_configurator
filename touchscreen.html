@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Configurator Touchscreen</title>
+    <style>
+        body { 
+            font-family: sans-serif; 
+            text-align: center; 
+            background: #f5f5f7; 
+            margin: 0; 
+            overflow: hidden; 
+            height: 100vh; 
+            display: flex; 
+            flex-direction: column;
+            user-select: none; 
+            -webkit-user-select: none;
+        }
+        .header { padding: 15px; background: white; border-bottom: 1px solid #ddd; }
+        #touch-area { 
+            flex-grow: 1; 
+            background: #fff; 
+            margin: 15px; 
+            border: 2px dashed #ccc; 
+            border-radius: 20px; 
+            display: flex; 
+            justify-content: center; 
+            align-items: center; 
+            color: #aaa; 
+            touch-action: none; 
+            cursor: grab;
+            font-weight: bold;
+        }
+        #touch-area:active { cursor: grabbing; }
+        
+        .section-title { font-size: 14px; color: #666; text-transform: uppercase; letter-spacing: 1px; margin: 10px 0 5px 0; font-weight: bold;}
+        .controls-container { background: white; padding: 15px; border-top: 1px solid #ddd; }
+        
+        .grid-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-bottom: 15px; }
+        .grid-4 { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; }
+        
+        button { padding: 15px 5px; border-radius: 10px; border: 1px solid #ddd; font-weight: bold; cursor: pointer; font-size: 14px; transition: all 0.2s; }
+        button:active { transform: scale(0.95); }
+        
+        .rood { background: #e02424; color: white; border: none; }
+        .blauw { background: #1d4ed8; color: white; border: none; }
+        .grijs { background: #1f2937; color: white; border: none; }
+        .zoom-btn { background: #e5e7eb; color: #374151; }
+        .action-btn { background: #f3f4f6; color: #1f2937; border: 1px solid #d1d5db; }
+        .connect-btn { background: #10b981; color: white; font-size: 16px; padding: 10px 20px; border: none; }
+    </style>
+</head>
+<body>
+
+    <div class="header">
+        <button class="connect-btn" onclick="openGrootScherm()">1. Verbind Groot Scherm</button>
+    </div>
+
+    <div id="touch-area">Klik/sleep hier om de auto te draaien</div>
+
+    <div class="controls-container">
+        <div class="section-title">Kleur Lak</div>
+        <div class="grid-3">
+            <button class="rood" onclick="stuurBericht('kleur', '#ff0000')">Rood Metallic</button>
+            <button class="blauw" onclick="stuurBericht('kleur', '#0044ff')">Blauw Metallic</button>
+            <button class="grijs" onclick="stuurBericht('kleur', '#1a1a1a')">Zwart Metallic</button>
+        </div>
+
+        <div class="section-title">Interactie (Open / Dicht)</div>
+        <div class="grid-4">
+            <button class="action-btn" onclick="stuurBericht('animatie', 'deuren')">Deuren</button>
+            <button class="action-btn" onclick="stuurBericht('animatie', 'motorkap')">Motorkap</button>
+            <button class="action-btn" onclick="stuurBericht('animatie', 'kofferbak')">Kofferbak</button>
+            <button class="zoom-btn" onclick="stuurBericht('zoom', 0.9)">🔍 In</button>
+        </div>
+    </div>
+
+    <script>
+        let grootSchermVenster;
+        const touchArea = document.getElementById('touch-area');
+
+        function openGrootScherm() {
+            grootSchermVenster = window.open('groot-scherm.html', 'GrootScherm', 'width=1200,height=800');
+        }
+
+        function stuurBericht(type, waarde) {
+            if (grootSchermVenster && !grootSchermVenster.closed) {
+                grootSchermVenster.postMessage({ type: type, waarde: waarde }, '*');
+            }
+        }
+
+        let isDragging = false;
+        let lastX = 0;
+
+        function startDrag(clientX) {
+            isDragging = true;
+            lastX = clientX;
+            stuurBericht('start_sleep', true);
+        }
+
+        function stopDrag() {
+            if (!isDragging) return;
+            isDragging = false;
+            stuurBericht('stop_sleep', true);
+        }
+
+        touchArea.addEventListener('mousedown', (e) => startDrag(e.clientX));
+        touchArea.addEventListener('touchstart', (e) => startDrag(e.touches[0].clientX));
+
+        window.addEventListener('mousemove', (e) => {
+            if (!isDragging) return;
+            let deltaX = e.clientX - lastX;
+            stuurBericht('draai', deltaX * 0.01);
+            lastX = e.clientX;
+        });
+
+        window.addEventListener('touchmove', (e) => {
+            if (!isDragging) return;
+            let deltaX = e.touches[0].clientX - lastX;
+            stuurBericht('draai', deltaX * 0.01);
+            lastX = e.touches[0].clientX;
+        });
+
+        window.addEventListener('mouseup', stopDrag);
+        window.addEventListener('touchend', stopDrag);
+    </script>
+</body>
+</html>
