@@ -27,9 +27,10 @@
         scene = new THREE.Scene();
         scene.background = new THREE.Color(0xffffff); 
         
-        // CAMERA IETS VERDER NAAR ACHTEREN: Voor de perfecte showroom-compositie
+        // CAMERA HOEK AANGEPAST: Staat hoger (1.8) en kijkt veel verder naar beneden (0.1) 
+        // Hierdoor zakt het hele beeld drastisch naar de onderkant van het scherm!
         camera = new THREE.PerspectiveCamera(30, window.innerWidth / window.innerHeight, 0.1, 1000);
-        camera.position.set(4.5, 1.2, 6.0); 
+        camera.position.set(4.3, 1.8, 5.8); 
         camera.lookAt(0, 0.1, 0);
 
         renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: "high-performance" });
@@ -45,10 +46,10 @@
         scene.add(ambientLight); 
 
         const lichtenPosities = [
-            [0, 10, 0, 1.5],   // Boven
-            [5, 4, 4, 1.5],    // Linksvoor
-            [-5, 4, 4, 1.5],   // Rechtsvoor
-            [0, 3, -6, 1.0]    // Achterkant
+            [0, 10, 0, 1.5],   
+            [5, 4, 4, 1.5],    
+            [-5, 4, 4, 1.5],   
+            [0, 3, -6, 1.0]    
         ];
 
         lichtenPosities.forEach(pos => {
@@ -104,19 +105,19 @@
                 }
             });
 
-            // PERFECTE SCHALING EN POSITIONERING
+            // SCALING EN POSITIONERING
             const box = new THREE.Box3().setFromObject(autoModel);
             const center = box.getCenter(new THREE.Vector3());
             const size = box.getSize(new THREE.Vector3());
             const maxDim = Math.max(size.x, size.y, size.z);
             
-            // Teruggebracht van 11.0 naar 5.5 voor de perfecte balans!
-            const targetScale = 5.5 / maxDim; 
+            // Schaal iets vergroot naar 6.5 zodat de neus tijdens het draaien lekker dicht op de rand komt
+            const targetScale = 6.5 / maxDim; 
             autoModel.scale.set(targetScale, targetScale, targetScale);
             
             autoModel.position.x = -center.x * targetScale;
             autoModel.position.z = -center.z * targetScale;
-            autoModel.position.y = -box.min.y * targetScale;
+            autoModel.position.y = -box.min.y * targetScale; // Banden strak op de vloer
 
             scene.add(autoModel);
             document.getElementById('loader').style.display = 'none';
