@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <title>3D Car Display - Realistische Studio</title>
     <style>
-        body { margin: 0; background: white; overflow: hidden; font-family: sans-serif; }
+        body { margin: 0; background: white; overflow: hidden; font-family: sans-serif; transition: background 0.5s ease; }
         canvas { display: block; }
         #loader { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); font-size: 20px; color: #666; font-weight: bold; }
     </style>
@@ -17,21 +17,20 @@
 <script src="https://cdn.jsdelivr.net/gh/mrdoob/three.js@r128/examples/js/loaders/GLTFLoader.js"></script>
 
 <script>
-    let scene, camera, renderer, autoModel, lakMateriaal;
+    let scene, camera, renderer, autoModel, lakMateriaal, vloerMat;
+    let ambientLight, topLight, spotVoor, spotAchter, koplampLinks, koplampRechts;
     let isUserInteracting = false;
     let autoRotateTimeout;
-    let allesOpen = false;
-
-    let lossePanelen = [];
-    let rotatieDoelen = new Map();
+    let isNachtModus = false;
 
     function init() {
         scene = new THREE.Scene();
         scene.background = new THREE.Color(0xffffff); 
         
+        // CAMERA EXTREEM DICHTERBIJ: Voor een gegarandeerd gigantisch schermvullend effect
         camera = new THREE.PerspectiveCamera(30, window.innerWidth / window.innerHeight, 0.1, 1000);
-        camera.position.set(3.5, 0.8, 5.0); 
-        camera.lookAt(0, 0.3, 0);
+        camera.position.set(2.4, 0.6, 3.8); // Super dichtbij gezet!
+        camera.lookAt(0, 0.25, 0);
 
         renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: "high-performance" });
         renderer.setSize(window.innerWidth, window.innerHeight);
@@ -41,34 +40,47 @@
         renderer.toneMappingExposure = 1.4; 
         document.body.appendChild(renderer.domElement);
 
-        // --- HOOGWAARDIGE STUDIO BELICHTING ---
-        scene.add(new THREE.AmbientLight(0xffffff, 0.7)); 
+        // --- BELICHTING ---
+        ambientLight = new THREE.AmbientLight(0xffffff, 0.7);
+        scene.add(ambientLight); 
 
-        const topLight = new THREE.DirectionalLight(0xffffff, 1.4);
+        topLight = new THREE.DirectionalLight(0xffffff, 1.4);
         topLight.position.set(0, 15, 0);
         topLight.castShadow = true;
         topLight.shadow.mapSize.width = 2048;
         topLight.shadow.mapSize.height = 2048;
-        topLight.shadow.bias = -0.0001;
         scene.add(topLight);
 
-        const spotVoor = new THREE.DirectionalLight(0xffffff, 1.1);
+        spotVoor = new THREE.DirectionalLight(0xffffff, 1.1);
         spotVoor.position.set(5, 3, 4);
         scene.add(spotVoor);
 
-        const spotAchter = new THREE.DirectionalLight(0xffffff, 0.7);
+        spotAchter = new THREE.DirectionalLight(0xffffff, 0.7);
         spotAchter.position.set(-5, 2, -4);
         scene.add(spotAchter);
 
-        // Studio reflectievloer met zachte schaduw
+        // EXTRA KOPLAMPEN VOOR DE NACHTMODUS (Schijnen naar voren op de grond)
+        koplampLinks = new THREE.SpotLight(0xfffaed, 0, 15, Math.PI / 5, 0.5, 1);
+        koplampLinks.position.set(0.6, 0.3, 1.5);
+        koplampLinks.target.position.set(0.6, 0, 5);
+        scene.add(koplampLinks);
+        scene.add(koplampLinks.target);
+
+        koplampRechts = new THREE.SpotLight(0xfffaed, 0, 15, Math.PI / 5, 0.5, 1);
+        koplampRechts.position.set(-0.6, 0.3, 1.5);
+        koplampRechts.target.position.set(-0.6, 0, 5);
+        scene.add(koplampRechts);
+        scene.add(koplampRechts.target);
+
+        // Studio reflectievloer
         const vloerGeo = new THREE.PlaneGeometry(100, 100);
-        const vloerMat = new THREE.ShadowMaterial({ opacity: 0.18 });
+        vloerMat = new THREE.ShadowMaterial({ opacity: 0.18 });
         const vloer = new THREE.Mesh(vloerGeo, vloerMat);
         vloer.rotation.x = -Math.PI / 2;
         vloer.receiveShadow = true;
         scene.add(vloer);
 
-        // Premium glanzende metallic autolak
+        // Premium metallic lak
         lakMateriaal = new THREE.MeshStandardMaterial({
             color: 0x0044ff,
             metalness: 0.92,
@@ -89,28 +101,14 @@
                     node.receiveShadow = true;
                     
                     const matName = node.material.name ? node.material.name.toLowerCase() : '';
-                    const nodeName = node.name ? node.name.toLowerCase() : '';
 
-                    // Lak toewijzen aan carrosserie
                     if (matName.includes('body') || matName.includes('paint') || matName.includes('carrosserie') || matName.includes('lak') || matName.includes('exterior')) {
                         node.material = lakMateriaal;
                     }
 
-                    // Ramen glanzend maken
                     if (matName.includes('window') || matName.includes('glass') || matName.includes('glas')) {
                         node.material.roughness = 0.0;
                         node.material.metalness = 1.0;
-                    }
-
-                    // STRIKTE CHECK: We negeren het woord 'body' volledig voor animaties!
-                    if (!nodeName.includes('body') && !nodeName.includes('chassis')) {
-                        if (nodeName.includes('door') || nodeName.includes('hood') || nodeName.includes('trunk') || nodeName.includes('boot') || nodeName.includes('klep') || nodeName.includes('gate') || nodeName.includes('bonnet')) {
-                            let breekPunt = node.parent && node.parent !== autoModel ? node.parent : node;
-                            if (!lossePanelen.includes(breekPunt)) {
-                                lossePanelen.push(breekPunt);
-                                rotatieDoelen.set(breekPunt, 0);
-                            }
-                        }
                     }
                 }
             });
@@ -121,7 +119,8 @@
             const size = box.getSize(new THREE.Vector3());
             const maxDim = Math.max(size.x, size.y, size.z);
             
-            const targetScale = 8.5 / maxDim; 
+            // Geforceerd naar factor 9.5 voor maximale vetheid op je scherm!
+            const targetScale = 9.5 / maxDim; 
             autoModel.scale.set(targetScale, targetScale, targetScale);
             
             autoModel.position.x = -center.x * targetScale;
@@ -140,24 +139,6 @@
     function animate() {
         requestAnimationFrame(animate);
 
-        lossePanelen.forEach(node => {
-            let doelRotatie = rotatieDoelen.get(node) || 0;
-            
-            if (node.name.toLowerCase().includes('door')) {
-                if (node.name.toLowerCase().includes('r') || node.position.z < 0) {
-                    node.rotation.y += (-doelRotatie - node.rotation.y) * 0.08;
-                } else {
-                    node.rotation.y += (doelRotatie - node.rotation.y) * 0.08;
-                }
-            } else {
-                if (node.name.toLowerCase().includes('hood') || node.name.toLowerCase().includes('bonnet')) {
-                    node.rotation.x += (-doelRotatie - node.rotation.x) * 0.08;
-                } else {
-                    node.rotation.x += (doelRotatie - node.rotation.x) * 0.08;
-                }
-            }
-        });
-
         if (autoModel && !isUserInteracting) {
             autoModel.rotation.y += 0.002; 
         }
@@ -165,7 +146,7 @@
         renderer.render(scene, camera);
     }
 
-    // --- COMMUNICATIE ---
+    // --- COMMUNICATIE VAN TOUCHSCREEN ---
     window.addEventListener('message', (event) => {
         const boodschap = event.data;
         if (!autoModel) return;
@@ -185,13 +166,42 @@
 
         if (boodschap.type === 'draai') {
             autoModel.rotation.y += boodschap.waarde;
+            
+            // Zorg dat de koplampen meedraaien met de auto
+            if (koplampLinks && koplampRechts) {
+                let m = new THREE.Matrix4().makeRotationY(boodschap.waarde);
+                koplampLinks.position.applyMatrix4(m);
+                koplampLinks.target.position.applyMatrix4(m);
+                koplampRechts.position.applyMatrix4(m);
+                koplampRechts.target.position.applyMatrix4(m);
+            }
         }
 
-        if (boodschap.type === 'animatie' && boodschap.waarde === 'alles') {
-            allesOpen = !allesOpen;
-            lossePanelen.forEach(node => {
-                rotatieDoelen.set(node, allesOpen ? 0.7 : 0);
-            });
+        // --- SCHAKEL DAG EN NACHT ---
+        if (boodschap.type === 'licht') {
+            isNachtModus = !isNachtModus;
+            
+            if (isNachtModus) {
+                // Nachtstand: Studio wordt donker, koplampen aan!
+                scene.background.set(0x0a0a0c);
+                ambientLight.intensity = 0.05;
+                topLight.intensity = 0.1;
+                spotVoor.intensity = 0.0;
+                spotAchter.intensity = 0.1;
+                vloerMat.opacity = 0.4; // Schaduw/licht beter zichtbaar in het donker
+                koplampLinks.intensity = 6.0;
+                koplampRechts.intensity = 6.0;
+            } else {
+                // Dagstand: Alles weer helder wit
+                scene.background.set(0xffffff);
+                ambientLight.intensity = 0.7;
+                topLight.intensity = 1.4;
+                spotVoor.intensity = 1.1;
+                spotAchter.intensity = 0.7;
+                vloerMat.opacity = 0.18;
+                koplampLinks.intensity = 0.0;
+                koplampRechts.intensity = 0.0;
+            }
         }
     });
 
