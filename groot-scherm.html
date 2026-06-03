@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <title>3D Car Display - Realistische Studio</title>
     <style>
-        body { margin: 0; background: white; overflow: hidden; font-family: sans-serif; transition: background 0.5s ease; }
+        body { margin: 0; background: #ffffff; overflow: hidden; font-family: sans-serif; transition: background 0.4s ease; }
         canvas { display: block; }
         #loader { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); font-size: 20px; color: #666; font-weight: bold; }
     </style>
@@ -17,8 +17,8 @@
 <script src="https://cdn.jsdelivr.net/gh/mrdoob/three.js@r128/examples/js/loaders/GLTFLoader.js"></script>
 
 <script>
-    let scene, camera, renderer, autoModel, lakMateriaal, vloerMat;
-    let ambientLight, topLight, spotVoor, spotAchter, koplampLinks, koplampRechts;
+    let scene, camera, renderer, autoModel, lakMateriaal, vloerMesh;
+    let ambientLight, directionalLights = [];
     let isUserInteracting = false;
     let autoRotateTimeout;
     let isNachtModus = false;
@@ -27,64 +27,56 @@
         scene = new THREE.Scene();
         scene.background = new THREE.Color(0xffffff); 
         
-        // CAMERA EXTREEM DICHTERBIJ: Voor een gegarandeerd gigantisch schermvullend effect
+        // CAMERA IETS VERDER NAAR ACHTEREN: Voor de perfecte showroom-compositie
         camera = new THREE.PerspectiveCamera(30, window.innerWidth / window.innerHeight, 0.1, 1000);
-        camera.position.set(2.4, 0.6, 3.8); // Super dichtbij gezet!
-        camera.lookAt(0, 0.25, 0);
+        camera.position.set(4.5, 0.9, 6.0); // Iets verder weg gezet zodat de auto helemaal past
+        camera.lookAt(0, 0.4, 0);
 
         renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: "high-performance" });
         renderer.setSize(window.innerWidth, window.innerHeight);
         renderer.shadowMap.enabled = true;
         renderer.shadowMap.type = THREE.PCFSoftShadowMap;
         renderer.toneMapping = THREE.ACESFilmicToneMapping;
-        renderer.toneMappingExposure = 1.4; 
+        renderer.toneMappingExposure = 1.6; 
         document.body.appendChild(renderer.domElement);
 
-        // --- BELICHTING ---
-        ambientLight = new THREE.AmbientLight(0xffffff, 0.7);
+        // --- ULTRA HELDER LICHT ---
+        ambientLight = new THREE.AmbientLight(0xffffff, 1.2); 
         scene.add(ambientLight); 
 
-        topLight = new THREE.DirectionalLight(0xffffff, 1.4);
-        topLight.position.set(0, 15, 0);
-        topLight.castShadow = true;
-        topLight.shadow.mapSize.width = 2048;
-        topLight.shadow.mapSize.height = 2048;
-        scene.add(topLight);
+        const lichtenPosities = [
+            [0, 10, 0, 1.5],   // Boven
+            [5, 4, 4, 1.5],    // Linksvoor
+            [-5, 4, 4, 1.5],   // Rechtsvoor
+            [0, 3, -6, 1.0]    // Achterkant
+        ];
 
-        spotVoor = new THREE.DirectionalLight(0xffffff, 1.1);
-        spotVoor.position.set(5, 3, 4);
-        scene.add(spotVoor);
+        lichtenPosities.forEach(pos => {
+            let light = new THREE.DirectionalLight(0xffffff, pos[3]);
+            light.position.set(pos[0], pos[1], pos[2]);
+            if(pos[0] === 0 && pos[1] === 10) {
+                light.castShadow = true;
+                light.shadow.mapSize.width = 2048;
+                light.shadow.mapSize.height = 2048;
+                light.shadow.bias = -0.0001;
+            }
+            scene.add(light);
+            directionalLights.push(light);
+        });
 
-        spotAchter = new THREE.DirectionalLight(0xffffff, 0.7);
-        spotAchter.position.set(-5, 2, -4);
-        scene.add(spotAchter);
-
-        // EXTRA KOPLAMPEN VOOR DE NACHTMODUS (Schijnen naar voren op de grond)
-        koplampLinks = new THREE.SpotLight(0xfffaed, 0, 15, Math.PI / 5, 0.5, 1);
-        koplampLinks.position.set(0.6, 0.3, 1.5);
-        koplampLinks.target.position.set(0.6, 0, 5);
-        scene.add(koplampLinks);
-        scene.add(koplampLinks.target);
-
-        koplampRechts = new THREE.SpotLight(0xfffaed, 0, 15, Math.PI / 5, 0.5, 1);
-        koplampRechts.position.set(-0.6, 0.3, 1.5);
-        koplampRechts.target.position.set(-0.6, 0, 5);
-        scene.add(koplampRechts);
-        scene.add(koplampRechts.target);
-
-        // Studio reflectievloer
+        // Vloer
         const vloerGeo = new THREE.PlaneGeometry(100, 100);
-        vloerMat = new THREE.ShadowMaterial({ opacity: 0.18 });
-        const vloer = new THREE.Mesh(vloerGeo, vloerMat);
-        vloer.rotation.x = -Math.PI / 2;
-        vloer.receiveShadow = true;
-        scene.add(vloer);
+        const vloerMat = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.4, metalness: 0.0 });
+        vloerMesh = new THREE.Mesh(vloerGeo, vloerMat);
+        vloerMesh.rotation.x = -Math.PI / 2;
+        vloerMesh.receiveShadow = true;
+        scene.add(vloerMesh);
 
         // Premium metallic lak
         lakMateriaal = new THREE.MeshStandardMaterial({
             color: 0x0044ff,
-            metalness: 0.92,
-            roughness: 0.06,
+            metalness: 0.85,
+            roughness: 0.1,
             clearcoat: 1.0,
             clearcoatRoughness: 0.02
         });
@@ -100,32 +92,31 @@
                     node.castShadow = true;
                     node.receiveShadow = true;
                     
-                    const matName = node.material.name ? node.material.name.toLowerCase() : '';
+                    if (node.material) {
+                        node.material.envMapIntensity = 2.0; 
+                    }
+
+                    const matName = node.material && node.material.name ? node.material.name.toLowerCase() : '';
 
                     if (matName.includes('body') || matName.includes('paint') || matName.includes('carrosserie') || matName.includes('lak') || matName.includes('exterior')) {
                         node.material = lakMateriaal;
                     }
-
-                    if (matName.includes('window') || matName.includes('glass') || matName.includes('glas')) {
-                        node.material.roughness = 0.0;
-                        node.material.metalness = 1.0;
-                    }
                 }
             });
 
-            // HANDMATIGE SCALING & POSITIONERING
+            // PERFECTE SCHALING EN POSITIONERING
             const box = new THREE.Box3().setFromObject(autoModel);
             const center = box.getCenter(new THREE.Vector3());
             const size = box.getSize(new THREE.Vector3());
             const maxDim = Math.max(size.x, size.y, size.z);
             
-            // Geforceerd naar factor 9.5 voor maximale vetheid op je scherm!
-            const targetScale = 9.5 / maxDim; 
+            // Teruggebracht van 11.0 naar 5.5 voor de perfecte balans!
+            const targetScale = 5.5 / maxDim; 
             autoModel.scale.set(targetScale, targetScale, targetScale);
             
             autoModel.position.x = -center.x * targetScale;
             autoModel.position.z = -center.z * targetScale;
-            autoModel.position.y = -box.min.y * targetScale;
+            autoModel.position.y = -box.min.y * targetScale; 
 
             scene.add(autoModel);
             document.getElementById('loader').style.display = 'none';
@@ -146,8 +137,10 @@
         renderer.render(scene, camera);
     }
 
-    // --- COMMUNICATIE VAN TOUCHSCREEN ---
+    // --- COMMUNICATIE ---
     window.addEventListener('message', (event) => {
+        if (event.origin !== window.location.origin) return;
+        
         const boodschap = event.data;
         if (!autoModel) return;
 
@@ -166,41 +159,23 @@
 
         if (boodschap.type === 'draai') {
             autoModel.rotation.y += boodschap.waarde;
-            
-            // Zorg dat de koplampen meedraaien met de auto
-            if (koplampLinks && koplampRechts) {
-                let m = new THREE.Matrix4().makeRotationY(boodschap.waarde);
-                koplampLinks.position.applyMatrix4(m);
-                koplampLinks.target.position.applyMatrix4(m);
-                koplampRechts.position.applyMatrix4(m);
-                koplampRechts.target.position.applyMatrix4(m);
-            }
         }
 
-        // --- SCHAKEL DAG EN NACHT ---
         if (boodschap.type === 'licht') {
             isNachtModus = !isNachtModus;
             
             if (isNachtModus) {
-                // Nachtstand: Studio wordt donker, koplampen aan!
                 scene.background.set(0x0a0a0c);
-                ambientLight.intensity = 0.05;
-                topLight.intensity = 0.1;
-                spotVoor.intensity = 0.0;
-                spotAchter.intensity = 0.1;
-                vloerMat.opacity = 0.4; // Schaduw/licht beter zichtbaar in het donker
-                koplampLinks.intensity = 6.0;
-                koplampRechts.intensity = 6.0;
+                vloerMesh.material.color.set(0x111115);
+                ambientLight.intensity = 0.1;
+                directionalLights.forEach(l => l.intensity = 0.2);
             } else {
-                // Dagstand: Alles weer helder wit
                 scene.background.set(0xffffff);
-                ambientLight.intensity = 0.7;
-                topLight.intensity = 1.4;
-                spotVoor.intensity = 1.1;
-                spotAchter.intensity = 0.7;
-                vloerMat.opacity = 0.18;
-                koplampLinks.intensity = 0.0;
-                koplampRechts.intensity = 0.0;
+                vloerMesh.material.color.set(0xffffff);
+                ambientLight.intensity = 1.2;
+                directionalLights.forEach((l, idx) => {
+                    l.intensity = idx === 3 ? 1.0 : 1.5;
+                });
             }
         }
     });
