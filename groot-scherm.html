@@ -30,8 +30,8 @@
         // CAMERA HOEK AANGEPAST: Staat hoger (1.8) en kijkt veel verder naar beneden (0.1) 
         // Hierdoor zakt het hele beeld drastisch naar de onderkant van het scherm!
         camera = new THREE.PerspectiveCamera(30, window.innerWidth / window.innerHeight, 0.1, 1000);
-        camera.position.set(4.3, 1.8, 5.8); 
-        camera.lookAt(0, 0.1, 0);
+        camera.position.set(4.3, 1.1, 5.8); 
+        camera.lookAt(0, -0.3, 0);
 
         renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: "high-performance" });
         renderer.setSize(window.innerWidth, window.innerHeight);
@@ -71,6 +71,7 @@
         vloerMesh = new THREE.Mesh(vloerGeo, vloerMat);
         vloerMesh.rotation.x = -Math.PI / 2;
         vloerMesh.receiveShadow = true;
+        vloerMesh.position.y = -1.2;
         scene.add(vloerMesh);
 
         // Premium metallic lak
@@ -112,12 +113,12 @@
             const maxDim = Math.max(size.x, size.y, size.z);
             
             // Schaal iets vergroot naar 6.5 zodat de neus tijdens het draaien lekker dicht op de rand komt
-            const targetScale = 6.5 / maxDim; 
+            const targetScale = 6.3 / maxDim; 
             autoModel.scale.set(targetScale, targetScale, targetScale);
             
             autoModel.position.x = -center.x * targetScale;
             autoModel.position.z = -center.z * targetScale;
-            autoModel.position.y = -box.min.y * targetScale; // Banden strak op de vloer
+            autoModel.position.y = (-box.min.y * targetScale) - 1.0;
 
             scene.add(autoModel);
             document.getElementById('loader').style.display = 'none';
