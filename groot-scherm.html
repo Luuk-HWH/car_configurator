@@ -22,8 +22,9 @@
     let autoRotateTimeout;
     let allesOpen = false;
 
-    // Lijst om bewegende onderdelen uit jouw specifieke model in op te slaan
-    let deurenEnKleppen = [];
+    // Lijsten om onderdelen in te bewaren voor animatie
+    let lossePanelen = [];
+    let rotatieDoelen = new Map();
 
     function init() {
         scene = new THREE.Scene();
@@ -38,7 +39,7 @@
         renderer.shadowMap.enabled = true;
         renderer.shadowMap.type = THREE.PCFSoftShadowMap;
         renderer.toneMapping = THREE.ACESFilmicToneMapping;
-        renderer.toneMappingExposure = 1.4; // Prachtige heldere showroom belichting
+        renderer.toneMappingExposure = 1.4; 
         document.body.appendChild(renderer.domElement);
 
         // --- HOOGWAARDIGE STUDIO BELICHTING ---
@@ -77,7 +78,7 @@
             clearcoatRoughness: 0.02
         });
 
-        // --- HIER LAAD IK JOUW EIGEN MODEL IN ---
+        // --- LAAD HET MODEL IN ---
         const loader = new THREE.GLTFLoader();
         
         loader.load('mijnauto.glb', function (gltf) {
@@ -88,37 +89,41 @@
                     node.castShadow = true;
                     node.receiveShadow = true;
                     
-                    // Herken automatisch de lak-onderdelen op basis van veelvoorkomende namen
                     const matName = node.material.name ? node.material.name.toLowerCase() : '';
+                    const nodeName = node.name ? node.name.toLowerCase() : '';
+
+                    // Lak toewijzen
                     if (matName.includes('body') || matName.includes('paint') || matName.includes('carrosserie') || matName.includes('lak') || matName.includes('exterior')) {
                         node.material = lakMateriaal;
                     }
 
-                    // Zorg dat glazen ruiten mooi spiegelen en doorschijnen
+                    // Ramen glanzend maken
                     if (matName.includes('window') || matName.includes('glass') || matName.includes('glas')) {
                         node.material.roughness = 0.0;
                         node.material.metalness = 1.0;
                     }
-                }
 
-                // Sla de bewegende onderdelen op als ze zo genoemd zijn in het Sketchfab model
-                const nodeName = node.name.toLowerCase();
-                if (nodeName.includes('door') || nodeName.includes('hood') || nodeName.includes('trunk') || nodeName.includes('boot') || nodeName.includes('klep')) {
-                    deurenEnKleppen.push(node);
+                    // UNIVERSELE HERKENNING: Is dit een losse deur, klep of motorkap?
+                    if (nodeName.includes('door') || nodeName.includes('hood') || nodeName.includes('trunk') || nodeName.includes('boot') || nodeName.includes('klep') || nodeName.includes('gate') || nodeName.includes('bonnet')) {
+                        // Sla het bovenliggende scharnier-onderdeel op als dat kan, anders de mesh zelf
+                        let breekPunt = node.parent && node.parent !== autoModel ? node.parent : node;
+                        if (!lossePanelen.includes(breekPunt)) {
+                            lossePanelen.push(breekPunt);
+                            rotatieDoelen.set(breekPunt, 0); // Startpositie is dicht (0 graden)
+                        }
+                    }
                 }
             });
 
-            // AUTOMATISCHE SCHAAL EN CENTRERING (Zorgt dat de auto altijd perfect in de studio past!)
+            // AUTOMATISCHE SCHAAL EN CENTRERING
             const box = new THREE.Box3().setFromObject(autoModel);
             const size = box.getSize(new THREE.Vector3());
             const center = box.getCenter(new THREE.Vector3());
             
-            // Bereken hoe groot de auto is en schaal hem naar een mooi studioformaat
             const maxDim = Math.max(size.x, size.y, size.z);
             const targetScale = 3.0 / maxDim;
             autoModel.scale.set(targetScale, targetScale, targetScale);
             
-            // Zet de auto exact in het middelpunt op de vloer
             autoModel.position.x = -center.x * targetScale;
             autoModel.position.z = -center.z * targetScale;
             autoModel.position.y = -box.min.y * targetScale;
@@ -127,7 +132,7 @@
             document.getElementById('loader').style.display = 'none';
             animate();
         }, undefined, function(error) {
-            document.getElementById('loader').innerText = "Fout bij laden van mijnauto.glb. Controleer de bestandsnaam!";
+            document.getElementById('loader').innerText = "Fout bij laden van mijnauto.glb.";
             console.error(error);
         });
     }
@@ -135,7 +140,29 @@
     function animate() {
         requestAnimationFrame(animate);
 
-        // Rustig ronddraaien in de showroom als de gebruiker niks doet
+        // Vloeiende animatie voor de deuren en kleppen
+        lossePanelen.forEach(node => {
+            let doelRotatie = rotatieDoelen.get(node) || 0;
+            
+            // Bepaal of het onderdeel naar links/rechts (Y-as) of omhoog (X-as) moet draaien
+            if (node.name.toLowerCase().includes('door')) {
+                // Linker- of rechterdeur check voor de juiste draairichting
+                if (node.name.toLowerCase().includes('r') || node.position.z < 0) {
+                    node.rotation.y += (-doelRotatie - node.rotation.y) * 0.08;
+                } else {
+                    node.rotation.y += (doelRotatie - node.rotation.y) * 0.08;
+                }
+            } else {
+                // Motorkap of kofferbak (draait omhoog via X-as)
+                if (node.name.toLowerCase().includes('hood') || node.name.toLowerCase().includes('bonnet')) {
+                    node.rotation.x += (-doelRotatie - node.rotation.x) * 0.08;
+                } else {
+                    node.rotation.x += (doelRotatie - node.rotation.x) * 0.08;
+                }
+            }
+        });
+
+        // Rustig ronddraaien in de showroom
         if (autoModel && !isUserInteracting) {
             autoModel.rotation.y += 0.002;
         }
@@ -143,7 +170,7 @@
         renderer.render(scene, camera);
     }
 
-    // --- COMMUNICATIE VANUIT TOUCHSCREEN ---
+    // --- COMMUNICATIE ---
     window.addEventListener('message', (event) => {
         const boodschap = event.data;
         if (!autoModel) return;
@@ -173,15 +200,9 @@
         if (boodschap.type === 'animatie' && boodschap.waarde === 'alles') {
             allesOpen = !allesOpen;
             
-            // Open of sluit herkenbare deuren en kleppen in jouw gedownloade model
-            deurenEnKleppen.forEach(node => {
-                if (node.name.toLowerCase().includes('door_l') || node.name.toLowerCase().includes('left')) {
-                    node.rotation.y = allesOpen ? 0.8 : 0;
-                } else if (node.name.toLowerCase().includes('door_r') || node.name.toLowerCase().includes('right')) {
-                    node.rotation.y = allesOpen ? -0.8 : 0;
-                } else {
-                    node.rotation.x = allesOpen ? -0.6 : 0;
-                }
+            // Geef elk los paneel zijn nieuwe doel-rotatie (0.7 radialen is ongeveer 40 graden open)
+            lossePanelen.forEach(node => {
+                rotatieDoelen.set(node, allesOpen ? 0.7 : 0);
             });
         }
     });
