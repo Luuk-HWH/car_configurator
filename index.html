@@ -14,6 +14,10 @@
 <div id="loader">Jouw eigen sportwagen wordt ingeladen...</div>
 
 <script type="module">
+    // 1. Correcte imports voor Three.js en de Loader
+    import * as THREE from 'https://unpkg.com/three@0.128.0/build/three.module.js';
+    import { GLTFLoader } from 'https://unpkg.com/three@0.128.0/examples/jsm/loaders/GLTFLoader.js';
+    
     // Firebase imports
     import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.2/firebase-app.js";
     import { getDatabase, ref, onValue } from "https://www.gstatic.com/firebasejs/9.22.2/firebase-database.js";
@@ -36,7 +40,6 @@
     let scene, camera, renderer, autoModel, lakMateriaal, vloerMesh;
     let ambientLight, directionalLights = [];
     let isUserInteracting = false;
-    let autoRotateTimeout;
     let isNachtModus = false;
 
     function init() {
@@ -88,7 +91,7 @@
             clearcoatRoughness: 0.02
         });
 
-        const loader = new THREE.GLTFLoader();
+        const loader = new GLTFLoader(); // Gebruik nu de geïmporteerde loader
         loader.load('mijnauto.glb', function (gltf) {
             autoModel = gltf.scene;
             autoModel.traverse((node) => {
@@ -114,7 +117,6 @@
             animate();
         });
 
-        // Firebase luisteraar voor de kleur
         onValue(ref(db, 'auto/kleur'), (snapshot) => {
             const nieuweKleur = snapshot.val();
             if (nieuweKleur) {
