@@ -42,18 +42,18 @@
         Door_L: { axis: 'z', val: 0 }, 
         Door_R: { axis: 'z', val: 0 }, 
         Hood_front: { axis: 'x', val: 0 }, 
-        Hood_Back: { axis: 'x', val: 0.05 } 
+        Hood_Back: { axis: 'x', val: -0.05 } 
     };
 
     function init() {
         scene = new THREE.Scene();
         scene.background = new THREE.Color(0xffffff);
         
-        camera = new THREE.PerspectiveCamera(45, window.innerWidth/window.innerHeight, 0.1, 1000);
+        camera = new THREE.PerspectiveCamera(45, 6480 / 3840, 0.1, 1000);
         camera.position.set(0, 1.5, 6);
 
         renderer = new THREE.WebGLRenderer({ antialias: true });
-        renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.setSize(6480, 3840);
         document.body.appendChild(renderer.domElement);
 
         scene.add(new THREE.AmbientLight(0xffffff, 2.0)); 
