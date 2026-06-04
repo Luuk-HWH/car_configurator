@@ -5,15 +5,15 @@
     <title>3D Car Display</title>
     <style>
         body { margin: 0; background: #ffffff; overflow: hidden; }
-        #loader { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); font-family: sans-serif; }
+        #loader { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); font-family: sans-serif; font-size: 20px; color: #333; }
     </style>
 </head>
 <body>
 
-<div id="loader">Jouw eigen sportwagen wordt ingeladen...</div>
+<div id="loader">Laden...</div>
 
 <script type="module">
-    // Gebruik de volledige URLs, dit is verplicht voor browsers
+    // Gebruik de volledige URLs. Er staat nergens meer 'three' als los woord!
     import * as THREE from 'https://unpkg.com/three@0.128.0/build/three.module.js';
     import { GLTFLoader } from 'https://unpkg.com/three@0.128.0/examples/jsm/loaders/GLTFLoader.js';
     import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.2/firebase-app.js";
@@ -30,45 +30,41 @@
         appId: "1:1065746669569:web:fbd1fbc36839f4a091e000"
     };
 
-    const app = initializeApp(firebaseConfig);
-    const db = getDatabase(app);
+    initializeApp(firebaseConfig);
+    const db = getDatabase();
 
-    let scene, camera, renderer, autoModel, lakMateriaal;
+    let scene, camera, renderer, autoModel;
 
     function init() {
         scene = new THREE.Scene();
-        scene.background = new THREE.Color(0xffffff); 
+        scene.background = new THREE.Color(0xffffff);
         
         camera = new THREE.PerspectiveCamera(30, window.innerWidth / window.innerHeight, 0.1, 1000);
-        camera.position.set(4.3, 1.1, 5.8); 
-        camera.lookAt(0, -0.3, 0);
+        camera.position.set(4, 2, 6);
+        camera.lookAt(0, 0, 0);
 
         renderer = new THREE.WebGLRenderer({ antialias: true });
         renderer.setSize(window.innerWidth, window.innerHeight);
         document.body.appendChild(renderer.domElement);
 
-        const light = new THREE.AmbientLight(0xffffff, 1.2); 
-        scene.add(light); 
-
-        lakMateriaal = new THREE.MeshStandardMaterial({ color: 0x0044ff });
+        scene.add(new THREE.AmbientLight(0xffffff, 1.2));
 
         const loader = new GLTFLoader();
-        // Gebruik './mijnauto.glb' (met een puntje) om aan te geven dat het in dezelfde map staat
+        // Zorg dat mijnauto.glb echt in de hoofdmap staat!
         loader.load('./mijnauto.glb', (gltf) => {
             autoModel = gltf.scene;
             scene.add(autoModel);
             document.getElementById('loader').style.display = 'none';
             animate();
-        }, undefined, (err) => console.error("Laadfout:", err));
-
-        onValue(ref(db, 'auto/kleur'), (snapshot) => {
-            if (snapshot.val()) lakMateriaal.color.set(snapshot.val());
+        }, undefined, (err) => {
+            console.error("Fout bij laden:", err);
+            document.getElementById('loader').innerText = "Fout bij laden model.";
         });
     }
 
     function animate() {
         requestAnimationFrame(animate);
-        if (autoModel) autoModel.rotation.y += 0.002;
+        if (autoModel) autoModel.rotation.y += 0.005;
         renderer.render(scene, camera);
     }
 
