@@ -107,7 +107,7 @@
     function animate() {
         requestAnimationFrame(animate);
         if(autoModel) {
-            autoModel.rotation.y += 0.005;
+            autoModel.rotation.y += 0.003;
             
             autoModel.traverse(node => {
                 if (targets.hasOwnProperty(node.name)) {
