@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Auto Controller</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+</head>
+<body>
+    <h1>Kies een kleur</h1>
+    <button onclick="veranderKleur(0xff0000)">Rood</button>
+    <button onclick="veranderKleur(0x0000ff)">Blauw</button>
+    <button onclick="veranderKleur(0xffffff)">Wit</button>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.2/firebase-app.js";
+        import { getDatabase, ref, set } from "https://www.gstatic.com/firebasejs/9.22.2/firebase-database.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyBrYn2fe9ojN6Z7voEANVFDAxFzNfogUKw",
+            authDomain: "car-configurator-616c9.firebaseapp.com",
+            databaseURL: "https://car-configurator-616c9-default-rtdb.europe-west1.firebasedatabase.app",
+            projectId: "car-configurator-616c9",
+            storageBucket: "car-configurator-616c9.firebasestorage.app",
+            messagingSenderId: "1065746669569",
+            appId: "1:1065746669569:web:fbd1fbc36839f4a091e000"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const db = getDatabase(app);
+
+        window.veranderKleur = (kleurCode) => {
+            set(ref(db, 'auto/kleur'), kleurCode);
+        };
+    </script>
+</body>
+</html>
