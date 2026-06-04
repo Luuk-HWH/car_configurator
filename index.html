@@ -50,16 +50,11 @@
         renderer.setSize(window.innerWidth, window.innerHeight);
         document.body.appendChild(renderer.domElement);
 
-        // 1. Zeer sterke verlichting voor maximale zichtbaarheid
+        // Belichting instellen
         scene.add(new THREE.AmbientLight(0xffffff, 2.0)); 
         const dirLight = new THREE.DirectionalLight(0xffffff, 2.0);
         dirLight.position.set(5, 10, 5);
         scene.add(dirLight);
-        
-        // Voeg extra licht toe vanuit de camera hoek
-        const frontLight = new THREE.DirectionalLight(0xffffff, 1.0);
-        camera.add(frontLight);
-        scene.add(camera);
 
         const loader = new THREE.GLTFLoader();
         loader.load('./mijnauto.glb', (gltf) => {
@@ -71,23 +66,21 @@
             scene.add(autoModel);
             document.getElementById('loader').style.display = 'none';
 
-            // Kleur update ZONDER filter
             if(window.db) {
                 window.onValue(window.ref(window.db, 'auto/kleur'), (snapshot) => {
                     const k = snapshot.val();
                     if(k) {
                         autoModel.traverse(node => {
-    if (node.isMesh) {
-        // We controleren nu specifiek op de materiaalnaam die je hebt gevonden
-        if (node.material.name === "CarPrimaryColor") {
-            node.material.color.set(k);
-            node.material.metalness = 0.5; // Maakt de lak glanzend
-            node.material.roughness = 0.2; // Maakt de lak glad
-            node.material.needsUpdate = true;
-        }
-        // Alles wat NIET "CarPrimaryColor" heet, wordt nu met rust gelaten!
-    }
-});
+                            if(node.isMesh && node.material.name === "CarPrimaryColor") {
+                                node.material.color.set(k);
+                                node.material.metalness = 0.5;
+                                node.material.roughness = 0.2;
+                                node.material.needsUpdate = true;
+                            }
+                        });
+                    }
+                });
+            }
             animate();
         });
     }
