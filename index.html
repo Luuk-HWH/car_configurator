@@ -38,6 +38,7 @@
 
 <script>
     let scene, camera, renderer, autoModel;
+    let targetRotations = { Door_L: 0, Door_R: 0, Hood_front: 0, Hood_Back: 0 };
 
     function init() {
         scene = new THREE.Scene();
@@ -65,8 +66,8 @@
             scene.add(autoModel);
             document.getElementById('loader').style.display = 'none';
 
-            // Listener voor KLEUR
             if(window.db) {
+                // Kleur listener
                 window.onValue(window.ref(window.db, 'auto/kleur'), (snapshot) => {
                     const k = snapshot.val();
                     if(k) {
@@ -81,16 +82,13 @@
                     }
                 });
 
-                // Listener voor DEUREN / MOTORKAP
+                // Deuren listener (bepaalt de DOEL-rotatie)
                 window.onValue(window.ref(window.db, 'auto/deuren'), (snapshot) => {
-                    const isOpened = snapshot.val();
-                    autoModel.traverse(node => {
-                        if (node.name === "Door_L") node.rotation.z = isOpened ? Math.PI / 3 : 0;
-                        if (node.name === "Door_R") node.rotation.z = isOpened ? -Math.PI / 3 : 0;
-                        if (node.name === "Hood_front" || node.name === "Hood_Back") {
-                            node.rotation.x = isOpened ? Math.PI / 4 : 0;
-                        }
-                    });
+                    const isOpen = snapshot.val();
+                    targetRotations.Door_L = isOpen ? -Math.PI / 3 : 0; // Omgedraaid teken
+                    targetRotations.Door_R = isOpen ? Math.PI / 3 : 0;  // Omgedraaid teken
+                    targetRotations.Hood_front = isOpen ? -Math.PI / 4 : 0; 
+                    targetRotations.Hood_Back = isOpen ? Math.PI / 4 : 0; 
                 });
             }
             animate();
@@ -99,7 +97,17 @@
 
     function animate() {
         requestAnimationFrame(animate);
-        if(autoModel) autoModel.rotation.y += 0.005;
+        if(autoModel) {
+            autoModel.rotation.y += 0.005;
+            
+            // Soepele animatie naar doelrotatie
+            autoModel.traverse(node => {
+                if (targetRotations.hasOwnProperty(node.name)) {
+                    node.rotation.z += (targetRotations[node.name] - node.rotation.z) * 0.1;
+                    node.rotation.x += (targetRotations[node.name] - node.rotation.x) * 0.1;
+                }
+            });
+        }
         renderer.render(scene, camera);
     }
     init();
