@@ -50,10 +50,16 @@
         renderer.setSize(window.innerWidth, window.innerHeight);
         document.body.appendChild(renderer.domElement);
 
-        scene.add(new THREE.AmbientLight(0xffffff, 0.8));
-        const dirLight = new THREE.DirectionalLight(0xffffff, 1.2);
-        dirLight.position.set(5, 10, 7);
+        // 1. Zeer sterke verlichting voor maximale zichtbaarheid
+        scene.add(new THREE.AmbientLight(0xffffff, 2.0)); 
+        const dirLight = new THREE.DirectionalLight(0xffffff, 2.0);
+        dirLight.position.set(5, 10, 5);
         scene.add(dirLight);
+        
+        // Voeg extra licht toe vanuit de camera hoek
+        const frontLight = new THREE.DirectionalLight(0xffffff, 1.0);
+        camera.add(frontLight);
+        scene.add(camera);
 
         const loader = new THREE.GLTFLoader();
         loader.load('./mijnauto.glb', (gltf) => {
@@ -71,11 +77,14 @@
                     if(k) {
                         autoModel.traverse(node => {
                             if(node.isMesh) {
-                                // FILTER: Alleen aanpassen als de naam 'body', 'paint' of 'lak' bevat
+                                // DEBUG: Print namen in console om te zien welk onderdeel wat is
+                                console.log("Gevonden onderdeel:", node.name);
+                                
                                 const n = node.name.toLowerCase();
-                                if(n.includes('body') || n.includes('paint') || n.includes('lak')) {
+                                // Als de auto zwart blijft, haal de if-check hieronder weg om te testen
+                                if(n.includes('body') || n.includes('paint') || n.includes('lak') || n.includes('car')) {
                                     node.material.color.set(k);
-                                    node.material.metalness = 0.5;
+                                    node.material.metalness = 0.3;
                                     node.material.roughness = 0.2;
                                     node.material.needsUpdate = true;
                                 }
