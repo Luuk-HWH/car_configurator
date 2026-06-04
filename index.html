@@ -5,7 +5,6 @@
     <title>3D Car Display - Realistische Studio</title>
     <style>
         body { margin: 0; background: #ffffff; overflow: hidden; font-family: sans-serif; }
-        canvas { display: block; }
         #loader { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); font-size: 20px; color: #666; font-weight: bold; }
     </style>
 </head>
@@ -14,13 +13,13 @@
 <div id="loader">Jouw eigen sportwagen wordt ingeladen...</div>
 
 <script type="module">
-    // 1. Stabiele imports via unpkg
+    // Gebruik de volledige URL's voor de modules
     import * as THREE from 'https://unpkg.com/three@0.128.0/build/three.module.js';
     import { GLTFLoader } from 'https://unpkg.com/three@0.128.0/examples/jsm/loaders/GLTFLoader.js';
     import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.2/firebase-app.js";
     import { getDatabase, ref, onValue } from "https://www.gstatic.com/firebasejs/9.22.2/firebase-database.js";
 
-    // Firebase configuratie
+    // Firebase config
     const firebaseConfig = {
         apiKey: "AIzaSyCanbhxTJjMLhy4iZLhklCxyFCHKGF4ZAw",
         authDomain: "car-configurator-616c9.firebaseapp.com",
@@ -44,52 +43,25 @@
         camera.position.set(4.3, 1.1, 5.8); 
         camera.lookAt(0, -0.3, 0);
 
-        renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: "high-performance" });
+        renderer = new THREE.WebGLRenderer({ antialias: true });
         renderer.setSize(window.innerWidth, window.innerHeight);
-        renderer.toneMapping = THREE.ACESFilmicToneMapping;
-        renderer.toneMappingExposure = 1.6; 
         document.body.appendChild(renderer.domElement);
 
         const ambientLight = new THREE.AmbientLight(0xffffff, 1.2); 
         scene.add(ambientLight); 
 
-        lakMateriaal = new THREE.MeshStandardMaterial({
-            color: 0x0044ff,
-            metalness: 0.85,
-            roughness: 0.1,
-            clearcoat: 1.0,
-            clearcoatRoughness: 0.02
-        });
+        lakMateriaal = new THREE.MeshStandardMaterial({ color: 0x0044ff, metalness: 0.8, roughness: 0.2 });
 
         const loader = new GLTFLoader();
         loader.load('./mijnauto.glb', (gltf) => {
             autoModel = gltf.scene;
-            autoModel.traverse((node) => {
-                if (node.isMesh) {
-                    const matName = node.material && node.material.name ? node.material.name.toLowerCase() : '';
-                    if (matName.includes('body') || matName.includes('paint') || matName.includes('lak')) {
-                        node.material = lakMateriaal;
-                    }
-                }
-            });
-            
-            const box = new THREE.Box3().setFromObject(autoModel);
-            const size = box.getSize(new THREE.Vector3());
-            const maxDim = Math.max(size.x, size.y, size.z);
-            const scale = 6.6 / maxDim;
-            autoModel.scale.set(scale, scale, scale);
-            
             scene.add(autoModel);
             document.getElementById('loader').style.display = 'none';
             animate();
-        }, undefined, (error) => {
-            console.error('Fout bij laden model:', error);
-            document.getElementById('loader').innerText = "Fout bij laden auto. Check console (F12).";
-        });
+        }, undefined, (err) => console.error("Laadfout:", err));
 
         onValue(ref(db, 'auto/kleur'), (snapshot) => {
-            const kleur = snapshot.val();
-            if (kleur) lakMateriaal.color.set(kleur);
+            if (snapshot.val()) lakMateriaal.color.set(snapshot.val());
         });
     }
 
