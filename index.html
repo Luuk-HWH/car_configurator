@@ -5,8 +5,9 @@
     <title>3D Car Configurator</title>
     <style>
         body { margin: 0; background: #ffffff; overflow: hidden; }
-        #loader { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); font-family: sans-serif; font-size: 20px; }
+        #loader { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); font-family: sans-serif; font-size: 20px; color: #333; }
     </style>
+    
     <script src="https://unpkg.com/three@0.128.0/build/three.min.js"></script>
     <script src="https://unpkg.com/three@0.128.0/examples/js/loaders/GLTFLoader.js"></script>
     
@@ -27,7 +28,6 @@
         const app = initializeApp(firebaseConfig);
         const db = getDatabase(app);
 
-        // Geef door aan de globale scope
         window.db = db;
         window.ref = ref;
         window.onValue = onValue;
@@ -35,7 +35,7 @@
 </head>
 <body>
 
-<div id="loader">Laden...</div>
+<div id="loader">Jouw eigen sportwagen wordt ingeladen...</div>
 
 <script>
     let scene, camera, renderer, autoModel, lakMateriaal;
@@ -51,22 +51,34 @@
         renderer.setSize(window.innerWidth, window.innerHeight);
         document.body.appendChild(renderer.domElement);
 
-        scene.add(new THREE.AmbientLight(0xffffff, 1.2));
+        // Zorg voor goed licht zodat de auto niet zwart is
+        scene.add(new THREE.AmbientLight(0xffffff, 1.0));
+        const dirLight = new THREE.DirectionalLight(0xffffff, 1.0);
+        dirLight.position.set(5, 5, 5);
+        scene.add(dirLight);
 
         const loader = new THREE.GLTFLoader();
         loader.load('./mijnauto.glb', (gltf) => {
             autoModel = gltf.scene;
             scene.add(autoModel);
             
-            // Zoek materiaal (voorbeeld)
-            autoModel.traverse(node => { if(node.isMesh) lakMateriaal = node.material; });
+            // Zoek naar het materiaal
+            autoModel.traverse(node => {
+                if(node.isMesh) {
+                    lakMateriaal = node.material;
+                }
+            });
             
             document.getElementById('loader').style.display = 'none';
 
             // Firebase koppeling
             if(window.db) {
                 window.onValue(window.ref(window.db, 'auto/kleur'), (snapshot) => {
-                    if(snapshot.val() && lakMateriaal) lakMateriaal.color.set(snapshot.val());
+                    const k = snapshot.val();
+                    if(k && lakMateriaal) {
+                        lakMateriaal.color.set(k);
+                        console.log("Kleur aangepast naar:", k);
+                    }
                 });
             }
             animate();
@@ -79,7 +91,6 @@
         renderer.render(scene, camera);
     }
 
-    // Start de boel
     init();
 </script>
 </body>
