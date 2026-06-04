@@ -35,6 +35,24 @@
 </head>
 <body>
 
+    <div style="position: absolute; top: 10px; left: 10px; z-index: 100;">
+    <button onclick="veranderKleur('#ff0000')">Rood</button>
+    <button onclick="veranderKleur('#00ff00')">Groen</button>
+    <button onclick="veranderKleur('#0000ff')">Blauw</button>
+</div>
+
+<script>
+    // Functie om de kleur naar Firebase te sturen
+    function veranderKleur(kleur) {
+        if (window.db && window.ref) {
+            // We gebruiken 'set' uit de Firebase database om de waarde in de cloud aan te passen
+            import("https://www.gstatic.com/firebasejs/9.22.2/firebase-database.js").then((mod) => {
+                mod.set(window.ref(window.db, 'auto/kleur'), kleur);
+                console.log("Kleur veranderd naar:", kleur);
+            });
+        }
+    }
+</script>
 <div id="loader">Jouw eigen sportwagen wordt ingeladen...</div>
 
 <script>
