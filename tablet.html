@@ -1,18 +1,17 @@
 <!DOCTYPE html>
-<html>
+<html lang="nl">
 <head>
-    <title>Auto Controller</title>
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-</head>
-<body>
-    <h1>Kies een kleur</h1>
-    <button onclick="veranderKleur(0xff0000)">Rood</button>
-    <button onclick="veranderKleur(0x0000ff)">Blauw</button>
-    <button onclick="veranderKleur(0xffffff)">Wit</button>
-
+    <meta charset="UTF-8">
+    <title>3D Car Configurator</title>
+    <style>
+        body { margin: 0; background: #ffffff; overflow: hidden; }
+        #loader { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); font-family: sans-serif; font-size: 20px; }
+    </style>
+    <script src="https://unpkg.com/three@0.128.0/build/three.min.js"></script>
+    <script src="https://unpkg.com/three@0.128.0/examples/js/loaders/GLTFLoader.js"></script>
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.2/firebase-app.js";
-        import { getDatabase, ref, set } from "https://www.gstatic.com/firebasejs/9.22.2/firebase-database.js";
+        import { getDatabase, ref, onValue } from "https://www.gstatic.com/firebasejs/9.22.2/firebase-database.js";
 
         const firebaseConfig = {
             apiKey: "AIzaSyCanbhxTJjMLhy4iZLhklCxyFCHKGF4ZAw",
@@ -27,9 +26,56 @@
         const app = initializeApp(firebaseConfig);
         const db = getDatabase(app);
 
-        window.veranderKleur = (kleurCode) => {
-            set(ref(db, 'auto/kleur'), kleurCode);
-        };
+        // Maak de database functies beschikbaar voor de normale <script> tag hieronder
+        window.db = db;
+        window.ref = ref;
+        window.onValue = onValue;
     </script>
+</head>
+<body>
+
+<div id="loader">Laden...</div>
+
+<script>
+    // 3. Je 3D Code
+    const scene = new THREE.Scene();
+    scene.background = new THREE.Color(0xffffff);
+    const camera = new THREE.PerspectiveCamera(75, window.innerWidth/window.innerHeight, 0.1, 1000);
+    const renderer = new THREE.WebGLRenderer({ antialias: true });
+    renderer.setSize(window.innerWidth, window.innerHeight);
+    document.body.appendChild(renderer.domElement);
+    scene.add(new THREE.AmbientLight(0xffffff, 1.2));
+    camera.position.set(0, 1, 5);
+
+    let autoModel, lakMateriaal;
+
+    const loader = new THREE.GLTFLoader();
+    loader.load('./mijnauto.glb', (gltf) => {
+        autoModel = gltf.scene;
+        // Zoek naar het lak-materiaal
+        autoModel.traverse((node) => {
+            if (node.isMesh) {
+                lakMateriaal = node.material; 
+            }
+        });
+        scene.add(autoModel);
+        document.getElementById('loader').style.display = 'none';
+
+        // Luister naar Firebase voor kleurveranderingen (gebruik de window. variabelen)
+        if (window.db) {
+            window.onValue(window.ref(window.db, 'auto/kleur'), (snapshot) => {
+                const kleur = snapshot.val();
+                if (kleur && lakMateriaal) lakMateriaal.color.set(kleur);
+            });
+        }
+        
+        function animate() {
+            requestAnimationFrame(animate);
+            if(autoModel) autoModel.rotation.y += 0.005;
+            renderer.render(scene, camera);
+        }
+        animate();
+    });
+</script>
 </body>
 </html>
