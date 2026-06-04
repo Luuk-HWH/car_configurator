@@ -13,10 +13,26 @@
 
 <div id="loader">Jouw eigen sportwagen wordt ingeladen...</div>
 
-<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
-<script src="https://cdn.jsdelivr.net/gh/mrdoob/three.js@r128/examples/js/loaders/GLTFLoader.js"></script>
+<script type="module">
+    // Firebase imports
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.2/firebase-app.js";
+    import { getDatabase, ref, onValue } from "https://www.gstatic.com/firebasejs/9.22.2/firebase-database.js";
 
-<script>
+    // Firebase configuratie
+    const firebaseConfig = {
+        apiKey: "AIzaSyBrYn2fe9ojN6Z7voEANVFDAxFzNfogUKw",
+        authDomain: "car-configurator-616c9.firebaseapp.com",
+        databaseURL: "https://car-configurator-616c9-default-rtdb.europe-west1.firebasedatabase.app",
+        projectId: "car-configurator-616c9",
+        storageBucket: "car-configurator-616c9.firebasestorage.app",
+        messagingSenderId: "1065746669569",
+        appId: "1:1065746669569:web:fbd1fbc36839f4a091e000"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const db = getDatabase(app);
+
+    // Three.js variabelen
     let scene, camera, renderer, autoModel, lakMateriaal, vloerMesh;
     let ambientLight, directionalLights = [];
     let isUserInteracting = false;
@@ -27,8 +43,6 @@
         scene = new THREE.Scene();
         scene.background = new THREE.Color(0xffffff); 
         
-        // CAMERA HOEK AANGEPAST: Staat hoger (1.8) en kijkt veel verder naar beneden (0.1) 
-        // Hierdoor zakt het hele beeld drastisch naar de onderkant van het scherm!
         camera = new THREE.PerspectiveCamera(30, window.innerWidth / window.innerHeight, 0.1, 1000);
         camera.position.set(4.3, 1.1, 5.8); 
         camera.lookAt(0, -0.3, 0);
@@ -41,17 +55,10 @@
         renderer.toneMappingExposure = 1.6; 
         document.body.appendChild(renderer.domElement);
 
-        // --- ULTRA HELDER LICHT ---
         ambientLight = new THREE.AmbientLight(0xffffff, 1.2); 
         scene.add(ambientLight); 
 
-        const lichtenPosities = [
-            [0, 10, 0, 1.5],   
-            [5, 4, 4, 1.5],    
-            [-5, 4, 4, 1.5],   
-            [0, 3, -6, 1.0]    
-        ];
-
+        const lichtenPosities = [[0, 10, 0, 1.5], [5, 4, 4, 1.5], [-5, 4, 4, 1.5], [0, 3, -6, 1.0]];
         lichtenPosities.forEach(pos => {
             let light = new THREE.DirectionalLight(0xffffff, pos[3]);
             light.position.set(pos[0], pos[1], pos[2]);
@@ -65,7 +72,6 @@
             directionalLights.push(light);
         });
 
-        // Vloer
         const vloerGeo = new THREE.PlaneGeometry(100, 100);
         const vloerMat = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.4, metalness: 0.0 });
         vloerMesh = new THREE.Mesh(vloerGeo, vloerMat);
@@ -74,7 +80,6 @@
         vloerMesh.position.y = -1.2;
         scene.add(vloerMesh);
 
-        // Premium metallic lak
         lakMateriaal = new THREE.MeshStandardMaterial({
             color: 0x0044ff,
             metalness: 0.85,
@@ -83,110 +88,46 @@
             clearcoatRoughness: 0.02
         });
 
-        // --- LAAD HET MODEL IN ---
         const loader = new THREE.GLTFLoader();
-        
         loader.load('mijnauto.glb', function (gltf) {
             autoModel = gltf.scene;
-
-            autoModel.traverse(function (node) {
+            autoModel.traverse((node) => {
                 if (node.isMesh) {
                     node.castShadow = true;
                     node.receiveShadow = true;
-                    
-                    if (node.material) {
-                        node.material.envMapIntensity = 2.0; 
-                    }
-
+                    if (node.material) node.material.envMapIntensity = 2.0;
                     const matName = node.material && node.material.name ? node.material.name.toLowerCase() : '';
-
-                    if (matName.includes('body') || matName.includes('paint') || matName.includes('carrosserie') || matName.includes('lak') || matName.includes('exterior')) {
+                    if (matName.includes('body') || matName.includes('paint') || matName.includes('lak')) {
                         node.material = lakMateriaal;
                     }
                 }
             });
 
-            // SCALING EN POSITIONERING
             const box = new THREE.Box3().setFromObject(autoModel);
             const center = box.getCenter(new THREE.Vector3());
-            const size = box.getSize(new THREE.Vector3());
-            const maxDim = Math.max(size.x, size.y, size.z);
-            
-            // Schaal iets vergroot naar 6.5 zodat de neus tijdens het draaien lekker dicht op de rand komt
-            const targetScale = 6.6 / maxDim; 
+            const targetScale = 6.6 / Math.max(box.getSize(new THREE.Vector3()).x, box.getSize(new THREE.Vector3()).y, box.getSize(new THREE.Vector3()).z);
             autoModel.scale.set(targetScale, targetScale, targetScale);
-            
-            autoModel.position.x = -center.x * targetScale;
-            autoModel.position.z = -center.z * targetScale;
-            autoModel.position.y = (-box.min.y * targetScale) - 1.2;
+            autoModel.position.set(-center.x * targetScale, (-box.min.y * targetScale) - 1.2, -center.z * targetScale);
 
             scene.add(autoModel);
             document.getElementById('loader').style.display = 'none';
             animate();
-        }, undefined, function(error) {
-            document.getElementById('loader').innerText = "Fout bij laden van mijnauto.glb.";
-            console.error(error);
+        });
+
+        // Firebase luisteraar voor de kleur
+        onValue(ref(db, 'auto/kleur'), (snapshot) => {
+            const nieuweKleur = snapshot.val();
+            if (nieuweKleur) {
+                lakMateriaal.color.set(nieuweKleur);
+            }
         });
     }
 
     function animate() {
         requestAnimationFrame(animate);
-
-        if (autoModel && !isUserInteracting) {
-            autoModel.rotation.y += 0.002; 
-        }
-
+        if (autoModel && !isUserInteracting) autoModel.rotation.y += 0.002;
         renderer.render(scene, camera);
     }
-
-    // --- COMMUNICATIE ---
-    window.addEventListener('message', (event) => {
-        if (event.origin !== window.location.origin) return;
-        
-        const boodschap = event.data;
-        if (!autoModel) return;
-
-        if (boodschap.type === 'start_sleep') {
-            isUserInteracting = true;
-            clearTimeout(autoRotateTimeout);
-        }
-        
-        if (boodschap.type === 'stop_sleep') {
-            autoRotateTimeout = setTimeout(() => { isUserInteracting = false; }, 4000); 
-        }
-
-        if (boodschap.type === 'kleur') {
-            lakMateriaal.color.set(boodschap.waarde);
-        }
-
-        if (boodschap.type === 'draai') {
-            autoModel.rotation.y += boodschap.waarde;
-        }
-
-        if (boodschap.type === 'licht') {
-            isNachtModus = !isNachtModus;
-            
-            if (isNachtModus) {
-                scene.background.set(0x0a0a0c);
-                vloerMesh.material.color.set(0x111115);
-                ambientLight.intensity = 0.1;
-                directionalLights.forEach(l => l.intensity = 0.2);
-            } else {
-                scene.background.set(0xffffff);
-                vloerMesh.material.color.set(0xffffff);
-                ambientLight.intensity = 1.2;
-                directionalLights.forEach((l, idx) => {
-                    l.intensity = idx === 3 ? 1.0 : 1.5;
-                });
-            }
-        }
-    });
-
-    window.addEventListener('resize', () => {
-        camera.aspect = window.innerWidth / window.innerHeight;
-        camera.updateProjectionMatrix();
-        renderer.setSize(window.innerWidth, window.innerHeight);
-    });
 
     init();
 </script>
