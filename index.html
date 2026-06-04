@@ -42,7 +42,7 @@
         Door_L: { axis: 'z', val: 0 }, 
         Door_R: { axis: 'z', val: 0 }, 
         Hood_front: { axis: 'x', val: 0 }, 
-        Hood_Back: { axis: 'x', val: 0 } 
+        Hood_Back: { axis: 'x', val: 0.05 } 
     };
 
     function init() {
@@ -64,6 +64,10 @@
         const loader = new THREE.GLTFLoader();
         loader.load('./mijnauto.glb', (gltf) => {
             autoModel = gltf.scene;
+
+            // SCHAAL AANPASSING: Auto 1.5x groter maken
+            autoModel.scale.set(1.5, 1.5, 1.5);
+            
             const box = new THREE.Box3().setFromObject(autoModel);
             const center = box.getCenter(new THREE.Vector3());
             autoModel.position.sub(center); 
@@ -90,11 +94,8 @@
                 // Deuren/Kappen listener
                 window.onValue(window.ref(window.db, 'auto/deuren'), (snapshot) => {
                     const isOpen = snapshot.val();
-                    // Deuren (die werkten goed, deze laten we staan)
                     targets.Door_L.val = isOpen ? -0.8 : 0; 
                     targets.Door_R.val = isOpen ? 0.8 : 0;
-                    
-                    // Motorkap & Kofferbak (als ze verkeerd gaan, wissel hier de 0.8 naar -0.8)
                     targets.Hood_front.val = isOpen ? -0.8 : 0; 
                     targets.Hood_Back.val = isOpen ? 0.8 : 0.05; 
                 });
