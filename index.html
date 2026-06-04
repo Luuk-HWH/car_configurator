@@ -95,8 +95,8 @@
                     targets.Door_R.val = isOpen ? 0.8 : 0;
                     
                     // Motorkap & Kofferbak (als ze verkeerd gaan, wissel hier de 0.8 naar -0.8)
-                    targets.Hood_front.val = isOpen ? 0.8 : 0; 
-                    targets.Hood_Back.val = isOpen ? -0.8 : 0.05; 
+                    targets.Hood_front.val = isOpen ? -0.8 : 0; 
+                    targets.Hood_Back.val = isOpen ? 0.8 : 0.05; 
                 });
             }
             animate();
