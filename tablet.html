@@ -4,20 +4,34 @@
     <meta charset="UTF-8">
     <title>Car Configurator Controller</title>
     <style>
-        body { font-family: sans-serif; display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; }
-        button { padding: 20px 40px; font-size: 20px; margin: 10px; cursor: pointer; border-radius: 10px; border: none; color: white; }
+        body { font-family: sans-serif; display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; background: #f4f4f4; }
+        h1 { margin-bottom: 30px; }
+        #color-picker { display: flex; gap: 20px; }
+        .color-dot { 
+            width: 70px; height: 70px; border-radius: 50%; 
+            cursor: pointer; border: 4px solid transparent; 
+            transition: transform 0.2s, border-color 0.2s;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+        .color-dot:hover { transform: scale(1.1); }
+        .color-dot.selected { border-color: #333; outline: 3px solid white; }
     </style>
 </head>
 <body>
 
     <h1>Kies een kleur</h1>
-    <button style="background: red;" onclick="stuurKleur('#ff0000')">Rood</button>
-    <button style="background: green;" onclick="stuurKleur('#00ff00')">Groen</button>
-    <button style="background: blue;" onclick="stuurKleur('#0000ff')">Blauw</button>
+    
+    <div id="color-picker">
+        <div class="color-dot" style="background: #ff0000;" data-color="#ff0000"></div>
+        <div class="color-dot" style="background: #00ff00;" data-color="#00ff00"></div>
+        <div class="color-dot" style="background: #0000ff;" data-color="#0000ff"></div>
+        <div class="color-dot" style="background: #ffffff;" data-color="#ffffff"></div>
+        <div class="color-dot" style="background: #333333;" data-color="#333333"></div>
+    </div>
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.2/firebase-app.js";
-        import { getDatabase, ref, set } from "https://www.gstatic.com/firebasejs/9.22.2/firebase-database.js";
+        import { getDatabase, ref, set, onValue } from "https://www.gstatic.com/firebasejs/9.22.2/firebase-database.js";
 
         const firebaseConfig = {
             apiKey: "AIzaSyCanbhxTJjMLhy4iZLhklCxyFCHKGF4ZAw",
@@ -32,11 +46,23 @@
         const app = initializeApp(firebaseConfig);
         const db = getDatabase(app);
 
-        // Maak de functie globaal zodat de knoppen hem kunnen aanroepen
-        window.stuurKleur = function(kleur) {
-            set(ref(db, 'auto/kleur'), kleur);
-            console.log("Kleur verzonden:", kleur);
-        };
+        const dots = document.querySelectorAll('.color-dot');
+
+        // Klik-logica voor de bolletjes
+        dots.forEach(dot => {
+            dot.addEventListener('click', () => {
+                const kleur = dot.getAttribute('data-color');
+                set(ref(db, 'auto/kleur'), kleur);
+            });
+        });
+
+        // Update de UI als de kleur in Firebase verandert (ook als iemand anders hem aanpast)
+        onValue(ref(db, 'auto/kleur'), (snapshot) => {
+            const activeColor = snapshot.val();
+            dots.forEach(dot => {
+                dot.classList.toggle('selected', dot.getAttribute('data-color') === activeColor);
+            });
+        });
     </script>
 </body>
 </html>
