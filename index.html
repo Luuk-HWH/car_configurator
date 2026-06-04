@@ -2,10 +2,10 @@
 <html lang="nl">
 <head>
     <meta charset="UTF-8">
-    <title>3D Car Display - Realistische Studio</title>
+    <title>3D Car Display</title>
     <style>
-        body { margin: 0; background: #ffffff; overflow: hidden; font-family: sans-serif; }
-        #loader { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); font-size: 20px; color: #666; font-weight: bold; }
+        body { margin: 0; background: #ffffff; overflow: hidden; }
+        #loader { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); font-family: sans-serif; }
     </style>
 </head>
 <body>
@@ -13,7 +13,7 @@
 <div id="loader">Jouw eigen sportwagen wordt ingeladen...</div>
 
 <script type="module">
-    // Gebruik de volledige URL's voor de modules
+    // Gebruik de volledige URLs, dit is verplicht voor browsers
     import * as THREE from 'https://unpkg.com/three@0.128.0/build/three.module.js';
     import { GLTFLoader } from 'https://unpkg.com/three@0.128.0/examples/jsm/loaders/GLTFLoader.js';
     import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.2/firebase-app.js";
@@ -47,12 +47,13 @@
         renderer.setSize(window.innerWidth, window.innerHeight);
         document.body.appendChild(renderer.domElement);
 
-        const ambientLight = new THREE.AmbientLight(0xffffff, 1.2); 
-        scene.add(ambientLight); 
+        const light = new THREE.AmbientLight(0xffffff, 1.2); 
+        scene.add(light); 
 
-        lakMateriaal = new THREE.MeshStandardMaterial({ color: 0x0044ff, metalness: 0.8, roughness: 0.2 });
+        lakMateriaal = new THREE.MeshStandardMaterial({ color: 0x0044ff });
 
         const loader = new GLTFLoader();
+        // Gebruik './mijnauto.glb' (met een puntje) om aan te geven dat het in dezelfde map staat
         loader.load('./mijnauto.glb', (gltf) => {
             autoModel = gltf.scene;
             scene.add(autoModel);
