@@ -50,7 +50,6 @@
         renderer.setSize(window.innerWidth, window.innerHeight);
         document.body.appendChild(renderer.domElement);
 
-        // Belichting instellen
         scene.add(new THREE.AmbientLight(0xffffff, 2.0)); 
         const dirLight = new THREE.DirectionalLight(0xffffff, 2.0);
         dirLight.position.set(5, 10, 5);
@@ -66,6 +65,7 @@
             scene.add(autoModel);
             document.getElementById('loader').style.display = 'none';
 
+            // Listener voor KLEUR
             if(window.db) {
                 window.onValue(window.ref(window.db, 'auto/kleur'), (snapshot) => {
                     const k = snapshot.val();
@@ -79,6 +79,18 @@
                             }
                         });
                     }
+                });
+
+                // Listener voor DEUREN / MOTORKAP
+                window.onValue(window.ref(window.db, 'auto/deuren'), (snapshot) => {
+                    const isOpened = snapshot.val();
+                    autoModel.traverse(node => {
+                        if (node.name === "Door_L") node.rotation.z = isOpened ? Math.PI / 3 : 0;
+                        if (node.name === "Door_R") node.rotation.z = isOpened ? -Math.PI / 3 : 0;
+                        if (node.name === "Hood_front" || node.name === "Hood_Back") {
+                            node.rotation.x = isOpened ? Math.PI / 4 : 0;
+                        }
+                    });
                 });
             }
             animate();
