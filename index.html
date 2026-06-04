@@ -77,19 +77,17 @@
                     const k = snapshot.val();
                     if(k) {
                         autoModel.traverse(node => {
-                            if(node.isMesh) {
-                                console.log("Onderdeelnaam:", node.name); // Dit zie je in F12 console
-                                
-                                // We passen de kleur direct toe op ELK mesh onderdeel
-                                node.material.color.set(k);
-                                node.material.metalness = 0.3;
-                                node.material.roughness = 0.2;
-                                node.material.needsUpdate = true;
-                            }
-                        });
-                    }
-                });
-            }
+    if (node.isMesh) {
+        // We controleren nu specifiek op de materiaalnaam die je hebt gevonden
+        if (node.material.name === "CarPrimaryColor") {
+            node.material.color.set(k);
+            node.material.metalness = 0.5; // Maakt de lak glanzend
+            node.material.roughness = 0.2; // Maakt de lak glad
+            node.material.needsUpdate = true;
+        }
+        // Alles wat NIET "CarPrimaryColor" heet, wordt nu met rust gelaten!
+    }
+});
             animate();
         });
     }
