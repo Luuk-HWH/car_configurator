@@ -14,15 +14,16 @@
 <div id="loader">Jouw eigen sportwagen wordt ingeladen...</div>
 
 <script type="module">
-    // 1. Correcte imports voor Three.js en de Loader
-    import * as THREE from 'https://unpkg.com/three@0.128.0/build/three.module.js';
-    import { GLTFLoader } from 'https://unpkg.com/three@0.128.0/examples/jsm/loaders/GLTFLoader.js';
-    
-    // Firebase imports
+    // 1. Zorg dat we direct vanuit de Three.js module werken
+    import * as THREE from 'https://cdn.skypack.dev/three@0.128.0';
+    import { GLTFLoader } from 'https://cdn.skypack.dev/three@0.128.0/examples/jsm/loaders/GLTFLoader.js';
     import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.2/firebase-app.js";
     import { getDatabase, ref, onValue } from "https://www.gstatic.com/firebasejs/9.22.2/firebase-database.js";
 
-    // Firebase configuratie
+    // Maak THREE globaal beschikbaar voor de rest van je functies
+    window.THREE = THREE; 
+
+    // Firebase en de rest van je code...
     const firebaseConfig = {
         apiKey: "AIzaSyCanbhxTJjMLhy4iZLhklCxyFCHKGF4ZAw",
         authDomain: "car-configurator-616c9.firebaseapp.com",
@@ -32,6 +33,16 @@
         messagingSenderId: "1065746669569",
         appId: "1:1065746669569:web:fbd1fbc36839f4a091e000"
     };
+
+    const app = initializeApp(firebaseConfig);
+    const db = getDatabase(app);
+
+    // ... (rest van je variabelen: scene, camera, renderer etc.)
+    // ... (rest van je init() functie)
+
+    // BELANGRIJK: Zorg dat je init() pas aanroept als de pagina geladen is
+    window.onload = init;
+</script>
 
     const app = initializeApp(firebaseConfig);
     const db = getDatabase(app);
