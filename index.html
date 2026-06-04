@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <title>3D Car Display - Realistische Studio</title>
     <style>
-        body { margin: 0; background: #ffffff; overflow: hidden; font-family: sans-serif; transition: background 0.4s ease; }
+        body { margin: 0; background: #ffffff; overflow: hidden; font-family: sans-serif; }
         canvas { display: block; }
         #loader { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); font-size: 20px; color: #666; font-weight: bold; }
     </style>
@@ -14,16 +14,13 @@
 <div id="loader">Jouw eigen sportwagen wordt ingeladen...</div>
 
 <script type="module">
-    // 1. Zorg dat we direct vanuit de Three.js module werken
-    import * as THREE from 'https://cdn.skypack.dev/three@0.128.0';
-    import { GLTFLoader } from 'https://cdn.skypack.dev/three@0.128.0/examples/jsm/loaders/GLTFLoader.js';
+    // 1. Stabiele imports via unpkg
+    import * as THREE from 'https://unpkg.com/three@0.128.0/build/three.module.js';
+    import { GLTFLoader } from 'https://unpkg.com/three@0.128.0/examples/jsm/loaders/GLTFLoader.js';
     import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.2/firebase-app.js";
     import { getDatabase, ref, onValue } from "https://www.gstatic.com/firebasejs/9.22.2/firebase-database.js";
 
-    // Maak THREE globaal beschikbaar voor de rest van je functies
-    window.THREE = THREE; 
-
-    // Firebase en de rest van je code...
+    // Firebase configuratie
     const firebaseConfig = {
         apiKey: "AIzaSyCanbhxTJjMLhy4iZLhklCxyFCHKGF4ZAw",
         authDomain: "car-configurator-616c9.firebaseapp.com",
@@ -37,21 +34,7 @@
     const app = initializeApp(firebaseConfig);
     const db = getDatabase(app);
 
-    // ... (rest van je variabelen: scene, camera, renderer etc.)
-    // ... (rest van je init() functie)
-
-    // BELANGRIJK: Zorg dat je init() pas aanroept als de pagina geladen is
-    window.onload = init;
-</script>
-
-    const app = initializeApp(firebaseConfig);
-    const db = getDatabase(app);
-
-    // Three.js variabelen
-    let scene, camera, renderer, autoModel, lakMateriaal, vloerMesh;
-    let ambientLight, directionalLights = [];
-    let isUserInteracting = false;
-    let isNachtModus = false;
+    let scene, camera, renderer, autoModel, lakMateriaal;
 
     function init() {
         scene = new THREE.Scene();
@@ -63,36 +46,12 @@
 
         renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: "high-performance" });
         renderer.setSize(window.innerWidth, window.innerHeight);
-        renderer.shadowMap.enabled = true;
-        renderer.shadowMap.type = THREE.PCFSoftShadowMap;
         renderer.toneMapping = THREE.ACESFilmicToneMapping;
         renderer.toneMappingExposure = 1.6; 
         document.body.appendChild(renderer.domElement);
 
-        ambientLight = new THREE.AmbientLight(0xffffff, 1.2); 
+        const ambientLight = new THREE.AmbientLight(0xffffff, 1.2); 
         scene.add(ambientLight); 
-
-        const lichtenPosities = [[0, 10, 0, 1.5], [5, 4, 4, 1.5], [-5, 4, 4, 1.5], [0, 3, -6, 1.0]];
-        lichtenPosities.forEach(pos => {
-            let light = new THREE.DirectionalLight(0xffffff, pos[3]);
-            light.position.set(pos[0], pos[1], pos[2]);
-            if(pos[0] === 0 && pos[1] === 10) {
-                light.castShadow = true;
-                light.shadow.mapSize.width = 2048;
-                light.shadow.mapSize.height = 2048;
-                light.shadow.bias = -0.0001;
-            }
-            scene.add(light);
-            directionalLights.push(light);
-        });
-
-        const vloerGeo = new THREE.PlaneGeometry(100, 100);
-        const vloerMat = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.4, metalness: 0.0 });
-        vloerMesh = new THREE.Mesh(vloerGeo, vloerMat);
-        vloerMesh.rotation.x = -Math.PI / 2;
-        vloerMesh.receiveShadow = true;
-        vloerMesh.position.y = -1.2;
-        scene.add(vloerMesh);
 
         lakMateriaal = new THREE.MeshStandardMaterial({
             color: 0x0044ff,
@@ -102,43 +61,41 @@
             clearcoatRoughness: 0.02
         });
 
-        const loader = new GLTFLoader(); // Gebruik nu de geïmporteerde loader
-        loader.load('mijnauto.glb', function (gltf) {
+        const loader = new GLTFLoader();
+        loader.load('./mijnauto.glb', (gltf) => {
             autoModel = gltf.scene;
             autoModel.traverse((node) => {
                 if (node.isMesh) {
-                    node.castShadow = true;
-                    node.receiveShadow = true;
-                    if (node.material) node.material.envMapIntensity = 2.0;
                     const matName = node.material && node.material.name ? node.material.name.toLowerCase() : '';
                     if (matName.includes('body') || matName.includes('paint') || matName.includes('lak')) {
                         node.material = lakMateriaal;
                     }
                 }
             });
-
+            
             const box = new THREE.Box3().setFromObject(autoModel);
-            const center = box.getCenter(new THREE.Vector3());
-            const targetScale = 6.6 / Math.max(box.getSize(new THREE.Vector3()).x, box.getSize(new THREE.Vector3()).y, box.getSize(new THREE.Vector3()).z);
-            autoModel.scale.set(targetScale, targetScale, targetScale);
-            autoModel.position.set(-center.x * targetScale, (-box.min.y * targetScale) - 1.2, -center.z * targetScale);
-
+            const size = box.getSize(new THREE.Vector3());
+            const maxDim = Math.max(size.x, size.y, size.z);
+            const scale = 6.6 / maxDim;
+            autoModel.scale.set(scale, scale, scale);
+            
             scene.add(autoModel);
             document.getElementById('loader').style.display = 'none';
             animate();
+        }, undefined, (error) => {
+            console.error('Fout bij laden model:', error);
+            document.getElementById('loader').innerText = "Fout bij laden auto. Check console (F12).";
         });
 
         onValue(ref(db, 'auto/kleur'), (snapshot) => {
-            const nieuweKleur = snapshot.val();
-            if (nieuweKleur) {
-                lakMateriaal.color.set(nieuweKleur);
-            }
+            const kleur = snapshot.val();
+            if (kleur) lakMateriaal.color.set(kleur);
         });
     }
 
     function animate() {
         requestAnimationFrame(animate);
-        if (autoModel && !isUserInteracting) autoModel.rotation.y += 0.002;
+        if (autoModel) autoModel.rotation.y += 0.002;
         renderer.render(scene, camera);
     }
 
