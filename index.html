@@ -71,6 +71,14 @@
             const box = new THREE.Box3().setFromObject(autoModel);
             const center = box.getCenter(new THREE.Vector3());
             autoModel.position.sub(center); 
+
+            // HIER kun je de auto handmatig verplaatsen
+            // autoModel.position.y is voor de hoogte
+            autoModel.position.y -= 0.5; 
+
+            // autoModel.position.x is voor de zijkant
+            // Positief getal = rechts, Negatief getal = links
+            autoModel.position.x += 1.0;
             
             scene.add(autoModel);
             document.getElementById('loader').style.display = 'none';
