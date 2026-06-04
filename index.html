@@ -38,7 +38,12 @@
 
 <script>
     let scene, camera, renderer, autoModel;
-    let targetRotations = { Door_L: 0, Door_R: 0, Hood_front: 0, Hood_Back: 0 };
+    let targets = { 
+        Door_L: { axis: 'z', val: 0 }, 
+        Door_R: { axis: 'z', val: 0 }, 
+        Hood_front: { axis: 'x', val: 0 }, 
+        Hood_Back: { axis: 'x', val: 0 } 
+    };
 
     function init() {
         scene = new THREE.Scene();
@@ -82,13 +87,13 @@
                     }
                 });
 
-                // Deuren listener (bepaalt de DOEL-rotatie)
+                // Deuren listener
                 window.onValue(window.ref(window.db, 'auto/deuren'), (snapshot) => {
                     const isOpen = snapshot.val();
-                    targetRotations.Door_L = isOpen ? -Math.PI / 3 : 0; // Omgedraaid teken
-                    targetRotations.Door_R = isOpen ? Math.PI / 3 : 0;  // Omgedraaid teken
-                    targetRotations.Hood_front = isOpen ? -Math.PI / 4 : 0; 
-                    targetRotations.Hood_Back = isOpen ? Math.PI / 4 : 0; 
+                    targets.Door_L.val = isOpen ? -0.8 : 0; 
+                    targets.Door_R.val = isOpen ? 0.8 : 0;
+                    targets.Hood_front.val = isOpen ? 0.8 : 0;
+                    targets.Hood_Back.val = isOpen ? -0.8 : 0;
                 });
             }
             animate();
@@ -100,11 +105,14 @@
         if(autoModel) {
             autoModel.rotation.y += 0.005;
             
-            // Soepele animatie naar doelrotatie
             autoModel.traverse(node => {
-                if (targetRotations.hasOwnProperty(node.name)) {
-                    node.rotation.z += (targetRotations[node.name] - node.rotation.z) * 0.1;
-                    node.rotation.x += (targetRotations[node.name] - node.rotation.x) * 0.1;
+                if (targets.hasOwnProperty(node.name)) {
+                    let t = targets[node.name];
+                    if (t.axis === 'z') {
+                        node.rotation.z += (t.val - node.rotation.z) * 0.1;
+                    } else if (t.axis === 'x') {
+                        node.rotation.x += (t.val - node.rotation.x) * 0.1;
+                    }
                 }
             });
         }
