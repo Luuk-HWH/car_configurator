@@ -71,23 +71,20 @@
             scene.add(autoModel);
             document.getElementById('loader').style.display = 'none';
 
+            // Kleur update ZONDER filter
             if(window.db) {
                 window.onValue(window.ref(window.db, 'auto/kleur'), (snapshot) => {
                     const k = snapshot.val();
                     if(k) {
                         autoModel.traverse(node => {
                             if(node.isMesh) {
-                                // DEBUG: Print namen in console om te zien welk onderdeel wat is
-                                console.log("Gevonden onderdeel:", node.name);
+                                console.log("Onderdeelnaam:", node.name); // Dit zie je in F12 console
                                 
-                                const n = node.name.toLowerCase();
-                                // Als de auto zwart blijft, haal de if-check hieronder weg om te testen
-                                if(n.includes('body') || n.includes('paint') || n.includes('lak') || n.includes('car')) {
-                                    node.material.color.set(k);
-                                    node.material.metalness = 0.3;
-                                    node.material.roughness = 0.2;
-                                    node.material.needsUpdate = true;
-                                }
+                                // We passen de kleur direct toe op ELK mesh onderdeel
+                                node.material.color.set(k);
+                                node.material.metalness = 0.3;
+                                node.material.roughness = 0.2;
+                                node.material.needsUpdate = true;
                             }
                         });
                     }
