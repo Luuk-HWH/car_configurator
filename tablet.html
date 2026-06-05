@@ -17,6 +17,8 @@
         .color-dot.selected { border-color: #333; outline: 3px solid white; }
         #open-btn { padding: 20px 40px; font-size: 18px; cursor: pointer; background: #333; color: white; border: none; border-radius: 10px; transition: background 0.2s; }
         #open-btn:active { background: #555; }
+        #light-btn { padding: 20px 40px; font-size: 18px; cursor: pointer; background: #333; color: white; border: none; border-radius: 10px; transition: background 0.2s; margin-top: 20px; }
+        #light-btn:active { background: #555; }
     </style>
 </head>
 <body>
@@ -32,6 +34,7 @@
     </div>
 
     <button id="open-btn">Open/Sluit deuren en kappen</button>
+    <button id="light-btn">Lichten Aan/Uit</button>
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.2/firebase-app.js";
@@ -71,6 +74,14 @@
         openBtn.addEventListener('click', () => {
             isOpened = !isOpened;
             set(ref(db, 'auto/deuren'), isOpened);
+        });
+
+        // Lichten logica
+        const lightBtn = document.getElementById('light-btn');
+        let lightsOn = false;
+        lightBtn.addEventListener('click', () => {
+            lightsOn = !lightsOn;
+            set(ref(db, 'auto/lichten'), lightsOn);
         });
     </script>
 </body>
