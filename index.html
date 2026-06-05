@@ -99,7 +99,7 @@
             new THREE.ShadowMaterial({ opacity: 0.1 })
         );
         plane.rotation.x = -Math.PI / 2;
-        plane.position.y = 0.2; // Aangepast
+        plane.position.y = 0.5; // Verhoogd
         plane.receiveShadow = true;
         scene.add(plane);
 
@@ -121,7 +121,7 @@
             const center = box.getCenter(new THREE.Vector3());
             autoModel.position.sub(center);
             
-            autoModel.position.y = 0.5; // Aangepast
+            autoModel.position.y = 1.0; // Verhoogd
             autoModel.position.x -= 2.0;
             
             scene.add(autoModel);
@@ -150,13 +150,9 @@
                 window.onValue(window.ref(window.db, 'auto/lichten'), (snapshot) => {
                     const isAan = snapshot.val();
                     autoModel.traverse(n => {
-                        if (n.name === "Light") {
-                            n.material.emissive.set(isAan ? 0xfff4d6 : 0x000000); // Warm wit
-                            n.material.emissiveIntensity = isAan ? 2 : 0;
-                        }
-                        if (n.name === "light_red") {
-                            n.material.emissive.set(isAan ? 0xff0000 : 0x000000); // Rood
-                            n.material.emissiveIntensity = isAan ? 2 : 0;
+                        if (n.name === "Light" || n.name === "light_red") {
+                            n.material.emissive.set(n.name === "Light" ? 0xfff4d6 : 0xff0000);
+                            n.material.emissiveIntensity = isAan ? 5 : 0;
                         }
                     });
                 });
