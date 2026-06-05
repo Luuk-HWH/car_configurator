@@ -15,9 +15,18 @@
             left: 50%; 
             transform: translate(-50%, -50%); 
             font-family: sans-serif; 
-            font-size: 20px; 
-            color: #333; 
+            text-align: center;
         }
+        .car-outline {
+            width: 200px;
+            fill: none;
+            stroke: #333;
+            stroke-width: 2;
+            stroke-dasharray: 600;
+            stroke-dashoffset: 600;
+            animation: draw 5s linear forwards;
+        }
+        @keyframes draw { to { stroke-dashoffset: 0; } }
         canvas { 
             display: block; 
             width: 100vw; 
@@ -51,7 +60,12 @@
 </head>
 <body>
 
-<div id="loader">De sportwagen wordt geladen...</div>
+<div id="loader">
+    <svg class="car-outline" viewBox="0 0 200 60">
+        <path d="M10,40 L30,40 A10,10 0 0,1 50,40 L150,40 A10,10 0 0,1 170,40 L190,40 L180,20 L140,20 L120,10 L80,10 L60,20 L20,20 Z" />
+    </svg>
+    <div>De sportwagen wordt geladen...</div>
+</div>
 
 <script>
     let scene, camera, renderer, autoModel;
@@ -101,7 +115,13 @@
         scene.add(plane);
 
         const loader = new THREE.GLTFLoader();
-        loader.load('./mijnauto.glb', (gltf) => {
+        const loadPromise = new Promise((resolve) => {
+            loader.load('./mijnauto.glb', resolve);
+        });
+
+        const timerPromise = new Promise((resolve) => setTimeout(resolve, 5000));
+
+        Promise.all([loadPromise, timerPromise]).then(([gltf]) => {
             autoModel = gltf.scene;
 
             autoModel.traverse(n => { 
