@@ -42,7 +42,7 @@
         Door_L: { axis: 'z', val: 0 }, 
         Door_R: { axis: 'z', val: 0 }, 
         Hood_front: { axis: 'x', val: 0 }, 
-        Hood_Back: { axis: 'x', val: -0.05 } 
+        Hood_Back: { axis: 'x', val: 0 } 
     };
 
     function init() {
@@ -50,7 +50,7 @@
         scene.background = new THREE.Color(0xffffff);
         
         camera = new THREE.PerspectiveCamera(45, 6480 / 3840, 0.1, 1000);
-        camera.position.set(0, 1.5, 6);
+        camera.position.set(0, 2.5, 7);
 
         renderer = new THREE.WebGLRenderer({ antialias: true });
         renderer.setSize(6480, 3840);
@@ -66,7 +66,7 @@
             autoModel = gltf.scene;
 
             // SCHAAL AANPASSING: Auto 1.5x groter maken
-            autoModel.scale.set(1.0, 1.0, 1.0);
+            autoModel.scale.set(0.9, 0.9, 0.9);
             
             const box = new THREE.Box3().setFromObject(autoModel);
             const center = box.getCenter(new THREE.Vector3());
@@ -105,7 +105,7 @@
                     targets.Door_L.val = isOpen ? -0.8 : 0; 
                     targets.Door_R.val = isOpen ? 0.8 : 0;
                     targets.Hood_front.val = isOpen ? -0.8 : 0; 
-                    targets.Hood_Back.val = isOpen ? 0.8 : 0.05; 
+                    targets.Hood_Back.val = isOpen ? -0.8 : 0; 
                 });
             }
             animate();
