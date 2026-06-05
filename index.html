@@ -33,9 +33,24 @@
         .tire { 
             width: 150px; 
             height: 150px; 
-            border: 15px solid #000; 
+            background: radial-gradient(circle, #ddd 20%, #333 25%, #333 70%, #000 75%);
             border-radius: 50%;
-            animation: rotate 1s linear infinite, rollOut 1s linear 4s forwards;
+            border: 10px solid #222;
+            animation: rotate 0.5s linear infinite, rollOut 1.5s ease-in 4s forwards;
+        }
+
+        .tire::after {
+            content: '';
+            position: absolute;
+            top: 10%; left: 10%; width: 80%; height: 80%;
+            background: 
+                linear-gradient(90deg, transparent 48%, #fff 50%, transparent 52%),
+                linear-gradient(18deg, transparent 48%, #fff 50%, transparent 52%),
+                linear-gradient(54deg, transparent 48%, #fff 50%, transparent 52%),
+                linear-gradient(90deg, transparent 48%, #fff 50%, transparent 52%),
+                linear-gradient(126deg, transparent 48%, #fff 50%, transparent 52%),
+                linear-gradient(162deg, transparent 48%, #fff 50%, transparent 52%);
+            border-radius: 50%;
         }
 
         .smoke { 
@@ -242,4 +257,21 @@
         requestAnimationFrame(animate);
         if(autoModel) {
             autoModel.rotation.y += 0.003;
-            autoModel.traverse(node =>
+            autoModel.traverse(node => {
+                if (targets.hasOwnProperty(node.name)) {
+                    let t = targets[node.name];
+                    if (t.axis === 'z') {
+                        node.rotation.z += (t.val - node.rotation.z) * 0.1;
+                    } else if (t.axis === 'x') {
+                        node.rotation.x += (t.val - node.rotation.x) * 0.1;
+                    }
+                }
+            });
+        }
+        renderer.render(scene, camera);
+    }
+    
+    init();
+</script>
+</body>
+</html>
