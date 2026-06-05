@@ -174,13 +174,8 @@
         window.onValue(window.ref(window.db, 'auto/model'), (snapshot) => {
             const modelUrl = snapshot.val() || './mijnauto.glb';
             const loader = new THREE.GLTFLoader();
-            const loadPromise = new Promise((resolve) => {
-                loader.load(modelUrl, resolve);
-            });
-
-            const timerPromise = new Promise((resolve) => setTimeout(resolve, 5000));
-
-            Promise.all([loadPromise, timerPromise]).then(([gltf]) => {
+            
+            loader.load(modelUrl, (gltf) => {
                 if(autoModel) scene.remove(autoModel);
                 autoModel = gltf.scene;
 
