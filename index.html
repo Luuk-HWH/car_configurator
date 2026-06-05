@@ -144,9 +144,9 @@
 
         renderer = new THREE.WebGLRenderer({ antialias: true });
         renderer.setSize(6480, 3840);
-        // Realistische instellingen
+        // Verbeterde belichtingsinstellingen
         renderer.toneMapping = THREE.ACESFilmicToneMapping;
-        renderer.toneMappingExposure = 1.2;
+        renderer.toneMappingExposure = 2.0; 
         renderer.outputColorSpace = THREE.SRGBColorSpace;
         renderer.shadowMap.enabled = true;
         renderer.shadowMap.type = THREE.PCFSoftShadowMap;
@@ -154,12 +154,16 @@
         renderer.domElement.style.opacity = '0';
 
         const pmremGenerator = new THREE.PMREMGenerator(renderer);
-        scene.environment = pmremGenerator.fromScene(new THREE.Scene(), 0.04).texture;
+        // Gebruik een wittere achtergrond voor de reflectie-omgeving
+        const envScene = new THREE.Scene();
+        const hemi = new THREE.HemisphereLight(0xffffff, 0xffffff, 2);
+        envScene.add(hemi);
+        scene.environment = pmremGenerator.fromScene(envScene, 0.04).texture;
 
-        scene.add(new THREE.AmbientLight(0xffffff, 0.8)); 
-        scene.add(new THREE.HemisphereLight(0xffffff, 0x444444, 0.6));
+        scene.add(new THREE.AmbientLight(0xffffff, 1.2)); 
+        scene.add(new THREE.HemisphereLight(0xffffff, 0x444444, 1.0));
 
-        const dirLight = new THREE.DirectionalLight(0xffffff, 2.0);
+        const dirLight = new THREE.DirectionalLight(0xffffff, 2.5);
         dirLight.position.set(5, 10, 5);
         dirLight.castShadow = true;
         dirLight.shadow.camera.top = 10;
@@ -188,7 +192,7 @@
                 autoModel.traverse(n => { 
                     if (n.isMesh) { 
                         n.castShadow = true; 
-                        n.material.envMapIntensity = 3.0; 
+                        n.material.envMapIntensity = 5.0; // Hogere reflectiekracht
                         n.material.metalness = 0.9; 
                         n.material.roughness = 0.05; 
                     } 
