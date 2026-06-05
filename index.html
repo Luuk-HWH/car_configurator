@@ -171,88 +171,94 @@
         plane.receiveShadow = true;
         scene.add(plane);
 
-        const loader = new THREE.GLTFLoader();
-        const loadPromise = new Promise((resolve) => {
-            loader.load('./mijnauto.glb', resolve);
+        window.onValue(window.ref(window.db, 'auto/model'), (snapshot) => {
+            const modelUrl = snapshot.val() || './mijnauto.glb';
+            const loader = new THREE.GLTFLoader();
+            const loadPromise = new Promise((resolve) => {
+                loader.load(modelUrl, resolve);
+            });
+
+            const timerPromise = new Promise((resolve) => setTimeout(resolve, 5000));
+
+            Promise.all([loadPromise, timerPromise]).then(([gltf]) => {
+                if(autoModel) scene.remove(autoModel);
+                autoModel = gltf.scene;
+
+                autoModel.traverse(n => { 
+                    if (n.isMesh) { 
+                        n.castShadow = true; 
+                        n.material.envMapIntensity = 2.5; 
+                        n.material.metalness = 0.7; 
+                        n.material.roughness = 0.1; 
+                    } 
+                });
+                
+                autoModel.scale.set(1.1, 1.1, 1.1);
+                const box = new THREE.Box3().setFromObject(autoModel);
+                const center = box.getCenter(new THREE.Vector3());
+                autoModel.position.sub(center);
+                
+                autoModel.position.y = 0.7; 
+                autoModel.position.x -= 2.2;
+                
+                scene.add(autoModel);
+
+                // Sequencer: eerst wegrollen, dan fade-in
+                setTimeout(() => {
+                    document.getElementById('loader').style.opacity = '0';
+                    setTimeout(() => {
+                        document.getElementById('loader').style.display = 'none';
+                        renderer.domElement.style.opacity = '1';
+                    }, 1000);
+                }, 1000);
+            });
         });
 
-        const timerPromise = new Promise((resolve) => setTimeout(resolve, 5000));
-
-        Promise.all([loadPromise, timerPromise]).then(([gltf]) => {
-            autoModel = gltf.scene;
-
-            autoModel.traverse(n => { 
-                if (n.isMesh) { 
-                    n.castShadow = true; 
-                    n.material.envMapIntensity = 2.5; 
-                    n.material.metalness = 0.7; 
-                    n.material.roughness = 0.1; 
-                } 
+        if(window.db) {
+            window.onValue(window.ref(window.db, 'auto/kleur'), (snapshot) => {
+                const k = snapshot.val();
+                if(k && autoModel) {
+                    autoModel.traverse(n => { 
+                        if(n.isMesh && n.material.name === "CarPrimaryColor") {
+                            n.material.color.set(k); 
+                        } 
+                    });
+                }
             });
-            
-            autoModel.scale.set(1.1, 1.1, 1.1);
-            const box = new THREE.Box3().setFromObject(autoModel);
-            const center = box.getCenter(new THREE.Vector3());
-            autoModel.position.sub(center);
-            
-            autoModel.position.y = 0.7; 
-            autoModel.position.x -= 2.2;
-            
-            scene.add(autoModel);
 
-            // Sequencer: eerst wegrollen, dan fade-in
-            setTimeout(() => {
-                document.getElementById('loader').style.opacity = '0';
-                setTimeout(() => {
-                    document.getElementById('loader').style.display = 'none';
-                    renderer.domElement.style.opacity = '1';
-                }, 1000);
-            }, 1000);
+            window.onValue(window.ref(window.db, 'auto/deuren'), (snapshot) => {
+                const isOpen = snapshot.val();
+                targets.Door_L.val = isOpen ? -0.8 : 0; 
+                targets.Door_R.val = isOpen ? 0.8 : 0;
+                targets.Hood_front.val = isOpen ? -0.8 : 0; 
+                targets.Hood_Back.val = isOpen ? -0.8 : 1; 
+            });
 
-            if(window.db) {
-                window.onValue(window.ref(window.db, 'auto/kleur'), (snapshot) => {
-                    const k = snapshot.val();
-                    if(k) {
-                        autoModel.traverse(n => { 
-                            if(n.isMesh && n.material.name === "CarPrimaryColor") {
-                                n.material.color.set(k); 
-                            } 
-                        });
-                    }
-                });
-
-                window.onValue(window.ref(window.db, 'auto/deuren'), (snapshot) => {
-                    const isOpen = snapshot.val();
-                    targets.Door_L.val = isOpen ? -0.8 : 0; 
-                    targets.Door_R.val = isOpen ? 0.8 : 0;
-                    targets.Hood_front.val = isOpen ? -0.8 : 0; 
-                    targets.Hood_Back.val = isOpen ? -0.8 : 1; 
-                });
-
-                window.onValue(window.ref(window.db, 'auto/lichten'), (snapshot) => {
-                    const isAan = snapshot.val();
+            window.onValue(window.ref(window.db, 'auto/lichten'), (snapshot) => {
+                const isAan = snapshot.val();
+                if(autoModel) {
                     autoModel.traverse(n => {
                         if (n.name === "Light" || n.name === "light_red") {
                             n.material.emissive.set(n.name === "Light" ? 0xfff4d6 : 0xff0000);
                             n.material.emissiveIntensity = isAan ? 5 : 0;
                         }
                     });
-                });
+                }
+            });
 
-                window.onValue(window.ref(window.db, 'auto/kenteken'), (snapshot) => {
-                    const tekst = snapshot.val() || "AUTO";
-                    const canvas = document.createElement("canvas");
-                    canvas.width = 512; canvas.height = 128;
-                    const ctx = canvas.getContext("2d");
-                    ctx.fillStyle = "white"; ctx.fillRect(0,0,512,128);
-                    ctx.fillStyle = "black"; ctx.font = "Bold 80px Arial";
-                    ctx.textAlign = "center"; ctx.fillText(tekst, 256, 90);
-                    const texture = new THREE.CanvasTexture(canvas);
-                    autoModel.traverse(n => { if(n.name === "LicensePlate") n.material.map = texture; });
-                });
-            }
-            animate();
-        });
+            window.onValue(window.ref(window.db, 'auto/kenteken'), (snapshot) => {
+                const tekst = snapshot.val() || "AUTO";
+                const canvas = document.createElement("canvas");
+                canvas.width = 512; canvas.height = 128;
+                const ctx = canvas.getContext("2d");
+                ctx.fillStyle = "white"; ctx.fillRect(0,0,512,128);
+                ctx.fillStyle = "black"; ctx.font = "Bold 80px Arial";
+                ctx.textAlign = "center"; ctx.fillText(tekst, 256, 90);
+                const texture = new THREE.CanvasTexture(canvas);
+                if(autoModel) autoModel.traverse(n => { if(n.name === "LicensePlate") n.material.map = texture; });
+            });
+        }
+        animate();
     }
 
     function animate() {
