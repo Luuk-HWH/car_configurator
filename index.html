@@ -99,7 +99,7 @@
             new THREE.ShadowMaterial({ opacity: 0.1 })
         );
         plane.rotation.x = -Math.PI / 2;
-        plane.position.y = 0.5; // Verhoogd
+        plane.position.y = 0.1; 
         plane.receiveShadow = true;
         scene.add(plane);
 
@@ -116,12 +116,12 @@
                 } 
             });
             
-            autoModel.scale.set(0.9, 0.9, 0.9);
+            autoModel.scale.set(1.1, 1.1, 1.1);
             const box = new THREE.Box3().setFromObject(autoModel);
             const center = box.getCenter(new THREE.Vector3());
             autoModel.position.sub(center);
             
-            autoModel.position.y = 1.0; // Verhoogd
+            autoModel.position.y = 0.2; 
             autoModel.position.x -= 2.0;
             
             scene.add(autoModel);
