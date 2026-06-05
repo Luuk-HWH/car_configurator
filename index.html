@@ -76,11 +76,9 @@
         renderer.shadowMap.type = THREE.PCFSoftShadowMap;
         document.body.appendChild(renderer.domElement);
 
-        // Reflecties (Environment)
         const pmremGenerator = new THREE.PMREMGenerator(renderer);
         scene.environment = pmremGenerator.fromScene(new THREE.Scene(), 0.04).texture;
 
-        // Licht aanpassingen
         scene.add(new THREE.AmbientLight(0xffffff, 0.6)); 
         scene.add(new THREE.HemisphereLight(0xffffff, 0x444444, 0.8));
 
@@ -93,13 +91,12 @@
         dirLight.shadow.camera.right = 10;
         scene.add(dirLight);
 
-        // Grondvlak
         const plane = new THREE.Mesh(
             new THREE.PlaneGeometry(20, 20), 
             new THREE.ShadowMaterial({ opacity: 0.1 })
         );
         plane.rotation.x = -Math.PI / 2;
-        plane.position.y = 0.1; 
+        plane.position.y = 0.4; // Schaduw iets hoger
         plane.receiveShadow = true;
         scene.add(plane);
 
@@ -121,7 +118,7 @@
             const center = box.getCenter(new THREE.Vector3());
             autoModel.position.sub(center);
             
-            autoModel.position.y = 0.2; 
+            autoModel.position.y = 0.5; // Auto iets hoger
             autoModel.position.x -= 2.0;
             
             scene.add(autoModel);
@@ -155,6 +152,19 @@
                             n.material.emissiveIntensity = isAan ? 5 : 0;
                         }
                     });
+                });
+
+                // Kenteken logica
+                window.onValue(window.ref(window.db, 'auto/kenteken'), (snapshot) => {
+                    const tekst = snapshot.val() || "AUTO";
+                    const canvas = document.createElement("canvas");
+                    canvas.width = 512; canvas.height = 128;
+                    const ctx = canvas.getContext("2d");
+                    ctx.fillStyle = "white"; ctx.fillRect(0,0,512,128);
+                    ctx.fillStyle = "black"; ctx.font = "Bold 80px Arial";
+                    ctx.textAlign = "center"; ctx.fillText(tekst, 256, 90);
+                    const texture = new THREE.CanvasTexture(canvas);
+                    autoModel.traverse(n => { if(n.name === "LicensePlate") n.material.map = texture; });
                 });
             }
             animate();
