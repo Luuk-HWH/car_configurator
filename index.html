@@ -36,20 +36,22 @@
             background: radial-gradient(circle, #ddd 20%, #333 25%, #333 70%, #000 75%);
             border-radius: 50%;
             border: 10px solid #222;
-            animation: rotate 0.5s linear infinite, rollOut 1.5s ease-in 4s forwards;
+            /* De animatie staat nu op 2 seconden voor een rustigere rotatie */
+            animation: rotate 2s linear infinite, rollOut 1.5s ease-in 4s forwards;
         }
 
         .tire::after {
             content: '';
             position: absolute;
             top: 10%; left: 10%; width: 80%; height: 80%;
+            /* De spaken zijn nu dikker gemaakt (op 12% in plaats van 2%) */
             background: 
-                linear-gradient(90deg, transparent 48%, #fff 50%, transparent 52%),
-                linear-gradient(18deg, transparent 48%, #fff 50%, transparent 52%),
-                linear-gradient(54deg, transparent 48%, #fff 50%, transparent 52%),
-                linear-gradient(90deg, transparent 48%, #fff 50%, transparent 52%),
-                linear-gradient(126deg, transparent 48%, #fff 50%, transparent 52%),
-                linear-gradient(162deg, transparent 48%, #fff 50%, transparent 52%);
+                linear-gradient(90deg, transparent 44%, #fff 50%, transparent 56%),
+                linear-gradient(18deg, transparent 44%, #fff 50%, transparent 56%),
+                linear-gradient(54deg, transparent 44%, #fff 50%, transparent 56%),
+                linear-gradient(90deg, transparent 44%, #fff 50%, transparent 56%),
+                linear-gradient(126deg, transparent 44%, #fff 50%, transparent 56%),
+                linear-gradient(162deg, transparent 44%, #fff 50%, transparent 56%);
             border-radius: 50%;
         }
 
