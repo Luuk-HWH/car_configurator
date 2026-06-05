@@ -55,6 +55,7 @@
 
 <script>
     let scene, camera, renderer, autoModel;
+    let headLights = new THREE.PointLight(0xffffff, 0, 5);
     let targets = { 
         Door_L: { axis: 'z', val: 0 }, 
         Door_R: { axis: 'z', val: 0 }, 
@@ -73,7 +74,7 @@
         renderer = new THREE.WebGLRenderer({ antialias: true });
         renderer.setSize(6480, 3840);
         renderer.shadowMap.enabled = true;
-        renderer.shadowMap.type = THREE.PCFSoftShadowMap; // Zachtere randen voor schaduw
+        renderer.shadowMap.type = THREE.PCFSoftShadowMap;
         document.body.appendChild(renderer.domElement);
 
         // Reflecties (Environment)
@@ -87,14 +88,17 @@
         const dirLight = new THREE.DirectionalLight(0xffffff, 1.5);
         dirLight.position.set(5, 10, 5);
         dirLight.castShadow = true;
-        // Optimalisatie schaduwbereik
         dirLight.shadow.camera.top = 10;
         dirLight.shadow.camera.bottom = -10;
         dirLight.shadow.camera.left = -10;
         dirLight.shadow.camera.right = 10;
         scene.add(dirLight);
 
-        // Grondvlak (opacity verlaagd naar 0.1 voor zachtere schaduw)
+        // Koplampen
+        headLights.position.set(0, 0.5, 2);
+        scene.add(headLights);
+
+        // Grondvlak
         const plane = new THREE.Mesh(
             new THREE.PlaneGeometry(20, 20), 
             new THREE.ShadowMaterial({ opacity: 0.1 })
@@ -122,7 +126,6 @@
             const center = box.getCenter(new THREE.Vector3());
             autoModel.position.sub(center);
             
-            // Auto staat nu direct op y=0 (geen zwevend effect meer)
             autoModel.position.y = 0; 
             autoModel.position.x -= 2.0;
             
@@ -147,6 +150,10 @@
                     targets.Door_R.val = isOpen ? 0.8 : 0;
                     targets.Hood_front.val = isOpen ? -0.8 : 0; 
                     targets.Hood_Back.val = isOpen ? -0.8 : 1; 
+                });
+
+                window.onValue(window.ref(window.db, 'auto/lichten'), (snapshot) => {
+                    headLights.intensity = snapshot.val() ? 2 : 0;
                 });
             }
             animate();
