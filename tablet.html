@@ -6,6 +6,8 @@
     <style>
         body { font-family: sans-serif; display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 100vh; background: #f4f4f4; padding: 20px; }
         h1 { margin-bottom: 30px; }
+        #car-selector { display: flex; align-items: center; gap: 20px; margin-bottom: 30px; }
+        .arrow { font-size: 30px; cursor: pointer; padding: 10px; background: #ddd; border-radius: 5px; }
         #color-picker { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; margin-bottom: 40px; }
         .color-dot { 
             width: 70px; height: 70px; border-radius: 50%; 
@@ -22,6 +24,12 @@
     </style>
 </head>
 <body>
+
+    <div id="car-selector">
+        <div class="arrow" id="prev-car">&lt;</div>
+        <h2 id="car-name">Ford Mustang</h2>
+        <div class="arrow" id="next-car">&gt;</div>
+    </div>
 
     <h1>Kies een kleur</h1>
     <div id="color-picker">
@@ -56,6 +64,29 @@
 
         const app = initializeApp(firebaseConfig);
         const db = getDatabase(app);
+
+        // Car Selector logica
+        const cars = [
+            { file: './mijnauto.glb', name: 'Ford Mustang' },
+            { file: './bugatti_veyron_fully_rigged..glb', name: 'Bugatti Veyron' }
+        ];
+        let currentIndex = 0;
+        const carNameEl = document.getElementById('car-name');
+
+        document.getElementById('prev-car').addEventListener('click', () => {
+            currentIndex = (currentIndex === 0) ? cars.length - 1 : currentIndex - 1;
+            updateCar();
+        });
+
+        document.getElementById('next-car').addEventListener('click', () => {
+            currentIndex = (currentIndex === cars.length - 1) ? 0 : currentIndex + 1;
+            updateCar();
+        });
+
+        function updateCar() {
+            set(ref(db, 'auto/model'), cars[currentIndex].file);
+            carNameEl.innerText = cars[currentIndex].name;
+        }
 
         // Kleuren logica
         const dots = document.querySelectorAll('.color-dot');
