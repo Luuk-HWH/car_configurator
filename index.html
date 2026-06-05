@@ -144,37 +144,28 @@
 
         renderer = new THREE.WebGLRenderer({ antialias: true });
         renderer.setSize(6480, 3840);
-        // Verbeterde belichtingsinstellingen
-        renderer.toneMapping = THREE.ACESFilmicToneMapping;
-        renderer.toneMappingExposure = 2.0; 
-        renderer.outputColorSpace = THREE.SRGBColorSpace;
         renderer.shadowMap.enabled = true;
         renderer.shadowMap.type = THREE.PCFSoftShadowMap;
         document.body.appendChild(renderer.domElement);
         renderer.domElement.style.opacity = '0';
 
-        const pmremGenerator = new THREE.PMREMGenerator(renderer);
-        // Gebruik een wittere achtergrond voor de reflectie-omgeving
-        const envScene = new THREE.Scene();
-        const hemi = new THREE.HemisphereLight(0xffffff, 0xffffff, 2);
-        envScene.add(hemi);
-        scene.environment = pmremGenerator.fromScene(envScene, 0.04).texture;
-
+        // Basis licht voor de gehele ruimte
         scene.add(new THREE.AmbientLight(0xffffff, 1.2)); 
-        scene.add(new THREE.HemisphereLight(0xffffff, 0x444444, 1.0));
+        
+        // Showroom effect: Plafondlicht (RectAreaLight)
+        const rectLight = new THREE.RectAreaLight(0xffffff, 50, 10, 10);
+        rectLight.position.set(0, 5, 0);
+        rectLight.lookAt(0, 0, 0);
+        scene.add(rectLight);
 
-        const dirLight = new THREE.DirectionalLight(0xffffff, 2.5);
-        dirLight.position.set(5, 10, 5);
+        const dirLight = new THREE.DirectionalLight(0xffffff, 1.0);
+        dirLight.position.set(5, 5, 5);
         dirLight.castShadow = true;
-        dirLight.shadow.camera.top = 10;
-        dirLight.shadow.camera.bottom = -10;
-        dirLight.shadow.camera.left = -10;
-        dirLight.shadow.camera.right = 10;
         scene.add(dirLight);
 
         const plane = new THREE.Mesh(
             new THREE.PlaneGeometry(20, 20), 
-            new THREE.ShadowMaterial({ opacity: 0.3 })
+            new THREE.ShadowMaterial({ opacity: 0.2 })
         );
         plane.rotation.x = -Math.PI / 2;
         plane.position.y = 0.6; 
@@ -192,13 +183,11 @@
                 autoModel.traverse(n => { 
                     if (n.isMesh) { 
                         n.castShadow = true; 
-                        n.material.envMapIntensity = 5.0; // Hogere reflectiekracht
-                        n.material.metalness = 0.9; 
-                        n.material.roughness = 0.05; 
+                        n.material.metalness = 0.8; 
+                        n.material.roughness = 0.1; 
                     } 
                 });
                 
-                // Schaal aangepast naar 0.8
                 autoModel.scale.set(0.8, 0.8, 0.8);
                 const box = new THREE.Box3().setFromObject(autoModel);
                 const center = box.getCenter(new THREE.Vector3());
@@ -209,7 +198,6 @@
                 
                 scene.add(autoModel);
 
-                // Sequencer: eerst wegrollen, dan fade-in
                 setTimeout(() => {
                     document.getElementById('loader').style.opacity = '0';
                     setTimeout(() => {
