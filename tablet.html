@@ -5,9 +5,14 @@
     <title>Car Configurator Controller</title>
     <style>
         body { font-family: sans-serif; display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 100vh; background: #f4f4f4; padding: 20px; }
+        .view { display: none; text-align: center; }
+        .active { display: block; }
+
+        #car-selector { display: flex; align-items: center; gap: 40px; margin-bottom: 30px; }
+        .arrow { font-size: 50px; cursor: pointer; padding: 20px; background: #fff; border-radius: 10px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
+        #select-btn, #back-btn { padding: 20px 40px; font-size: 20px; cursor: pointer; background: #333; color: white; border: none; border-radius: 10px; }
+
         h1 { margin-bottom: 30px; }
-        #car-selector { display: flex; align-items: center; gap: 20px; margin-bottom: 30px; }
-        .arrow { font-size: 30px; cursor: pointer; padding: 10px; background: #ddd; border-radius: 5px; }
         #color-picker { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; margin-bottom: 40px; }
         .color-dot { 
             width: 70px; height: 70px; border-radius: 50%; 
@@ -25,27 +30,34 @@
 </head>
 <body>
 
-    <div id="car-selector">
-        <div class="arrow" id="prev-car">&lt;</div>
-        <h2 id="car-name">Ford Mustang</h2>
-        <div class="arrow" id="next-car">&gt;</div>
+    <div id="view-selector" class="view active">
+        <h1>Kies je auto</h1>
+        <div id="car-selector">
+            <div class="arrow" id="prev-car">&lt;</div>
+            <h2 id="car-name">Ford Mustang</h2>
+            <div class="arrow" id="next-car">&gt;</div>
+        </div>
+        <button id="select-btn">Selecteer</button>
     </div>
 
-    <h1>Kies een kleur</h1>
-    <div id="color-picker">
-        <div class="color-dot" style="background: #6E2E2E;" data-color="#6E2E2E"></div>
-        <div class="color-dot" style="background: #4E5336;" data-color="#4E5336"></div>
-        <div class="color-dot" style="background: #3E3E41;" data-color="#3E3E41"></div>
-        <div class="color-dot" style="background: #D9C375;" data-color="#D9C375"></div>
-        <div class="color-dot" style="background: #E69931;" data-color="#E69931"></div>
-        <div class="color-dot" style="background: #5F6E50;" data-color="#5F6E50"></div>
-    </div>
+    <div id="view-customizer" class="view">
+        <button id="back-btn">← Kies andere auto</button>
+        <h1>Kies een kleur</h1>
+        <div id="color-picker">
+            <div class="color-dot" style="background: #6E2E2E;" data-color="#6E2E2E"></div>
+            <div class="color-dot" style="background: #4E5336;" data-color="#4E5336"></div>
+            <div class="color-dot" style="background: #3E3E41;" data-color="#3E3E41"></div>
+            <div class="color-dot" style="background: #D9C375;" data-color="#D9C375"></div>
+            <div class="color-dot" style="background: #E69931;" data-color="#E69931"></div>
+            <div class="color-dot" style="background: #5F6E50;" data-color="#5F6E50"></div>
+        </div>
 
-    <button id="open-btn">Open/Sluit deuren en kappen</button>
+        <button id="open-btn">Open/Sluit deuren en kappen</button>
 
-    <div id="plate-section">
-        <input type="text" id="plate-input" placeholder="Kenteken..." maxlength="8">
-        <button id="plate-btn">Pas kenteken aan</button>
+        <div id="plate-section">
+            <input type="text" id="plate-input" placeholder="Kenteken..." maxlength="8">
+            <button id="plate-btn">Pas kenteken aan</button>
+        </div>
     </div>
 
     <script type="module">
@@ -65,6 +77,20 @@
         const app = initializeApp(firebaseConfig);
         const db = getDatabase(app);
 
+        // UI Wisseling
+        const viewSelector = document.getElementById('view-selector');
+        const viewCustomizer = document.getElementById('view-customizer');
+
+        document.getElementById('select-btn').addEventListener('click', () => {
+            viewSelector.classList.remove('active');
+            viewCustomizer.classList.add('active');
+        });
+
+        document.getElementById('back-btn').addEventListener('click', () => {
+            viewCustomizer.classList.remove('active');
+            viewSelector.classList.add('active');
+        });
+
         // Car Selector logica
         const cars = [
             { file: './mijnauto.glb', name: 'Ford Mustang' },
@@ -72,6 +98,11 @@
         ];
         let currentIndex = 0;
         const carNameEl = document.getElementById('car-name');
+
+        function updateCar() {
+            carNameEl.innerText = cars[currentIndex].name;
+            set(ref(db, 'auto/model'), cars[currentIndex].file);
+        }
 
         document.getElementById('prev-car').addEventListener('click', () => {
             currentIndex = (currentIndex === 0) ? cars.length - 1 : currentIndex - 1;
@@ -82,11 +113,6 @@
             currentIndex = (currentIndex === cars.length - 1) ? 0 : currentIndex + 1;
             updateCar();
         });
-
-        function updateCar() {
-            set(ref(db, 'auto/model'), cars[currentIndex].file);
-            carNameEl.innerText = cars[currentIndex].name;
-        }
 
         // Kleuren logica
         const dots = document.querySelectorAll('.color-dot');
