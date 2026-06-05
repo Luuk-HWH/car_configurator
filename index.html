@@ -112,6 +112,8 @@
         window.db = db;
         window.ref = ref;
         window.onValue = onValue;
+
+        init();
     </script>
 </head>
 <body>
@@ -273,8 +275,6 @@
         }
         renderer.render(scene, camera);
     }
-    
-    init();
 </script>
 </body>
 </html>
