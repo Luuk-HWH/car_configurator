@@ -79,19 +79,23 @@
         const pmremGenerator = new THREE.PMREMGenerator(renderer);
         scene.environment = pmremGenerator.fromScene(new THREE.Scene(), 0.04).texture;
 
-        scene.add(new THREE.AmbientLight(0xffffff, 0.8)); 
+        // Licht aanpassingen: Ambient + Hemisphere (tegen donkere onderkant)
+        scene.add(new THREE.AmbientLight(0xffffff, 0.6)); 
+        const hemiLight = new THREE.HemisphereLight(0xffffff, 0x444444, 0.8);
+        scene.add(hemiLight);
+
         const dirLight = new THREE.DirectionalLight(0xffffff, 1.5);
         dirLight.position.set(5, 10, 5);
         dirLight.castShadow = true;
         scene.add(dirLight);
 
-        // Grondvlak voor schaduw
+        // Grondvlak voor schaduw (dichterbij geplaatst)
         const plane = new THREE.Mesh(
             new THREE.PlaneGeometry(20, 20), 
-            new THREE.ShadowMaterial({ opacity: 0.2 })
+            new THREE.ShadowMaterial({ opacity: 0.3 })
         );
         plane.rotation.x = -Math.PI / 2;
-        plane.position.y = -0.5;
+        plane.position.y = 0; // "Plakt" nu beter aan de basis
         plane.receiveShadow = true;
         scene.add(plane);
 
@@ -102,9 +106,9 @@
             autoModel.traverse(n => { 
                 if (n.isMesh) { 
                     n.castShadow = true; 
-                    n.material.envMapIntensity = 1.5; 
-                    n.material.metalness = 0.8; 
-                    n.material.roughness = 0.2; 
+                    n.material.envMapIntensity = 2.5; // Verhoogde reflectie
+                    n.material.metalness = 0.7; 
+                    n.material.roughness = 0.1; // Gladder
                 } 
             });
             
