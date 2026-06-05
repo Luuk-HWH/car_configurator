@@ -55,7 +55,6 @@
 
 <script>
     let scene, camera, renderer, autoModel;
-    let headLights = new THREE.PointLight(0xffffff, 0, 5);
     let targets = { 
         Door_L: { axis: 'z', val: 0 }, 
         Door_R: { axis: 'z', val: 0 }, 
@@ -94,17 +93,13 @@
         dirLight.shadow.camera.right = 10;
         scene.add(dirLight);
 
-        // Koplampen
-        headLights.position.set(0, 0.5, 2);
-        scene.add(headLights);
-
         // Grondvlak
         const plane = new THREE.Mesh(
             new THREE.PlaneGeometry(20, 20), 
             new THREE.ShadowMaterial({ opacity: 0.1 })
         );
         plane.rotation.x = -Math.PI / 2;
-        plane.position.y = 0; 
+        plane.position.y = 0.2; // Aangepast
         plane.receiveShadow = true;
         scene.add(plane);
 
@@ -126,7 +121,7 @@
             const center = box.getCenter(new THREE.Vector3());
             autoModel.position.sub(center);
             
-            autoModel.position.y = 0; 
+            autoModel.position.y = 0.5; // Aangepast
             autoModel.position.x -= 2.0;
             
             scene.add(autoModel);
@@ -153,7 +148,17 @@
                 });
 
                 window.onValue(window.ref(window.db, 'auto/lichten'), (snapshot) => {
-                    headLights.intensity = snapshot.val() ? 2 : 0;
+                    const isAan = snapshot.val();
+                    autoModel.traverse(n => {
+                        if (n.name === "Light") {
+                            n.material.emissive.set(isAan ? 0xfff4d6 : 0x000000); // Warm wit
+                            n.material.emissiveIntensity = isAan ? 2 : 0;
+                        }
+                        if (n.name === "light_red") {
+                            n.material.emissive.set(isAan ? 0xff0000 : 0x000000); // Rood
+                            n.material.emissiveIntensity = isAan ? 2 : 0;
+                        }
+                    });
                 });
             }
             animate();
