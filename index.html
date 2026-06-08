@@ -221,12 +221,16 @@
                 }
             });
 
-            window.onValue(window.ref(window.db, 'auto/deuren'), (snapshot) => {
-                const isOpen = snapshot.val();
-                targets.Door_L.val = isOpen ? -0.8 : 0; 
-                targets.Door_R.val = isOpen ? 0.8 : 0;
-                targets.Hood_front.val = isOpen ? -0.8 : 0; 
-                targets.Hood_Back.val = isOpen ? -0.8 : 1; 
+            // Aangepaste deuren logica voor individuele onderdelen
+            const doors = ['Door_L', 'Door_R', 'Hood_front', 'Hood_Back'];
+            doors.forEach(part => {
+                window.onValue(window.ref(window.db, 'auto/deuren/' + part), (snapshot) => {
+                    const isOpen = snapshot.val();
+                    if (part === 'Door_L') targets.Door_L.val = isOpen ? -0.8 : 0;
+                    if (part === 'Door_R') targets.Door_R.val = isOpen ? 0.8 : 0;
+                    if (part === 'Hood_front') targets.Hood_front.val = isOpen ? -0.8 : 0;
+                    if (part === 'Hood_Back') targets.Hood_Back.val = isOpen ? -0.8 : 1;
+                });
             });
 
             window.onValue(window.ref(window.db, 'auto/lichten'), (snapshot) => {
