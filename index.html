@@ -152,8 +152,20 @@
         autoModel.traverse(node => {
             if (!node.isMesh || !node.material) return;
 
-            const originalMaterials = Array.isArray(node.material) ? node.material : [node.material];
-            const coloredMaterials = originalMaterials.map(material => {
+            const nodeName = node.name || '';
+            const materials = Array.isArray(node.material) ? node.material : [node.material];
+
+            let hasPaintMaterial = false;
+
+            const updatedMaterials = materials.map(material => {
+                const materialName = material.name || '';
+
+                if (nodeName !== 'CarPrimaryColor' && materialName !== 'CarPrimaryColor') {
+                    return material;
+                }
+
+                hasPaintMaterial = true;
+
                 const clonedMaterial = material.clone();
 
                 if (clonedMaterial.color) {
@@ -164,7 +176,11 @@
                 return clonedMaterial;
             });
 
-            node.material = Array.isArray(node.material) ? coloredMaterials : coloredMaterials[0];
+            if (!hasPaintMaterial) return;
+
+            node.material = Array.isArray(node.material)
+                ? updatedMaterials
+                : updatedMaterials[0];
         });
     }
 
