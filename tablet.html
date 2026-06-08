@@ -16,9 +16,7 @@
         .nav-icon { font-size: 40px; cursor: pointer; transition: transform 0.2s; }
         .nav-icon:hover { transform: scale(1.2); }
         .color-dot { width: 70px; height: 70px; border-radius: 50%; cursor: pointer; border: 4px solid transparent; transition: transform 0.2s; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
-        .color-dot:hover { transform: scale(1.1); }
-        /* Nieuwe stijl voor het touchpad */
-        #touch-pad { width: 100%; height: 200px; background: #f0f0f0; border-radius: 10px; display: flex; align-items: center; justify-content: center; touch-action: none; border: 2px solid #333; }
+        #touch-pad { width: 100%; height: 200px; background: #f0f0f0; border-radius: 10px; display: flex; align-items: center; justify-content: center; touch-action: none; border: 2px solid #333; font-weight: bold; }
     </style>
 </head>
 <body>
@@ -38,12 +36,8 @@
             <button id="back-btn">Terug</button>
             <button id="fullscreen-btn">Fullscreen</button>
         </div>
-        
         <h1>Configurator</h1>
-        <div id="sub-menu">
-            <p>Kies een optie hieronder</p>
-        </div>
-
+        <div id="sub-menu"><p>Kies een optie hieronder</p></div>
         <div class="bottom-nav">
             <div class="nav-icon" id="btn-color">🎨</div>
             <div class="nav-icon" id="btn-doors">🚗</div>
@@ -68,25 +62,31 @@
         const app = initializeApp(firebaseConfig);
         const db = getDatabase(app);
 
-        // ... (De rest van je standaard navigatie functies blijven hetzelfde)
+        // UI Navigatie
         document.getElementById('select-btn').addEventListener('click', () => { document.getElementById('view-selector').classList.remove('active'); document.getElementById('view-customizer').classList.add('active'); });
         document.getElementById('back-btn').addEventListener('click', () => { document.getElementById('view-customizer').classList.remove('active'); document.getElementById('view-selector').classList.add('active'); });
+        document.getElementById('fullscreen-btn').addEventListener('click', () => { 
+            if (!document.fullscreenElement) document.documentElement.requestFullscreen();
+            else document.exitFullscreen();
+        });
 
         // Touchpad logica
         document.getElementById('btn-touch').addEventListener('click', () => {
             const subMenu = document.getElementById('sub-menu');
-            subMenu.innerHTML = '<h3>Sleep op het grijze vlak om te draaien</h3><div id="touch-pad">DRAGEN</div>';
+            subMenu.innerHTML = '<h3>Sleep horizontaal om te draaien</h3><div id="touch-pad">SLEEP HIER</div>';
             
-            set(ref(db, 'auto/input_mode'), 'touch');
-            
+            let lastX = 0;
             const pad = document.getElementById('touch-pad');
+            
             pad.addEventListener('touchmove', (e) => {
-                // Verstuurt de X-positie van de aanraking naar Firebase
-                set(ref(db, 'auto/rotatie_input'), e.touches[0].clientX);
-            });
+                let currentX = e.touches[0].clientX;
+                let delta = (currentX - lastX) * 0.05; // Gevoeligheid instelling
+                set(ref(db, 'auto/rotatie_input'), delta);
+                lastX = currentX;
+            }, {passive: true});
         });
 
-        // Kleur en Deuren logica (onveranderd)
+        // Kleuren en Deuren (behouden)
         document.getElementById('btn-color').addEventListener('click', () => {
             const subMenu = document.getElementById('sub-menu');
             subMenu.innerHTML = '';
@@ -111,8 +111,6 @@
                 subMenu.appendChild(btn);
             });
         });
-
-        // ... (De rest van je car selector code)
     </script>
 </body>
 </html>
