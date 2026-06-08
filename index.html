@@ -127,6 +127,8 @@
 
 <script>
     let scene, camera, renderer, autoModel;
+    let isDragging = false;
+    let isTouchEnabled = false;
     let targets = { 
         Door_L: { axis: 'z', val: 0 }, 
         Door_R: { axis: 'z', val: 0 }, 
@@ -150,6 +152,14 @@
         renderer.shadowMap.type = THREE.PCFSoftShadowMap;
         document.body.appendChild(renderer.domElement);
         renderer.domElement.style.opacity = '0';
+
+        renderer.domElement.addEventListener('mousedown', () => { if(isTouchEnabled) isDragging = true; });
+        window.addEventListener('mouseup', () => { isDragging = false; });
+        renderer.domElement.addEventListener('mousemove', (e) => {
+            if (isDragging && isTouchEnabled && autoModel) {
+                autoModel.rotation.y += e.movementX * 0.01;
+            }
+        });
 
         scene.add(new THREE.AmbientLight(0xffffff, 0.8)); 
         scene.add(new THREE.HemisphereLight(0xffffff, 0x444444, 0.6));
@@ -210,6 +220,10 @@
         });
 
         if(window.db) {
+            window.onValue(window.ref(window.db, 'auto/input_mode'), (snapshot) => {
+                isTouchEnabled = snapshot.val() === 'touch';
+            });
+
             window.onValue(window.ref(window.db, 'auto/kleur'), (snapshot) => {
                 const k = snapshot.val();
                 if(k && autoModel) {
@@ -221,7 +235,6 @@
                 }
             });
 
-            // Aangepaste deuren logica voor individuele onderdelen
             const doors = ['Door_L', 'Door_R', 'Hood_front', 'Hood_Back'];
             doors.forEach(part => {
                 window.onValue(window.ref(window.db, 'auto/deuren/' + part), (snapshot) => {
@@ -263,7 +276,9 @@
     function animate() {
         requestAnimationFrame(animate);
         if(autoModel) {
-            autoModel.rotation.y += 0.003;
+            if (!isTouchEnabled) {
+                autoModel.rotation.y += 0.003;
+            }
             autoModel.traverse(node => {
                 if (targets.hasOwnProperty(node.name)) {
                     let t = targets[node.name];
