@@ -5,15 +5,21 @@
     <title>3D Car Configurator</title>
     <style>
         body { margin: 0; background: #ffffff; overflow: hidden; }
-        #loader { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: #ffffff; display: flex; align-items: center; justify-content: center; z-index: 1000; }
-        canvas { display: block; width: 100vw; height: 100vh; }
+        #loader { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: #ffffff; display: flex; align-items: center; justify-content: center; z-index: 1000; transition: opacity 1s ease; }
+        .tire-container { position: relative; width: 150px; height: 150px; }
+        .tire { width: 150px; height: 150px; background: radial-gradient(circle, #ddd 20%, #333 25%, #333 70%, #000 75%); border-radius: 50%; border: 10px solid #222; animation: rotate 2s linear infinite, rollOut 1.5s ease-in 4s forwards; }
+        .tire::after { content: ''; position: absolute; top: 10%; left: 10%; width: 80%; height: 80%; background: linear-gradient(90deg, transparent 44%, #fff 50%, transparent 56%), linear-gradient(18deg, transparent 44%, #fff 50%, transparent 56%), linear-gradient(54deg, transparent 44%, #fff 50%, transparent 56%), linear-gradient(90deg, transparent 44%, #fff 50%, transparent 56%), linear-gradient(126deg, transparent 44%, #fff 50%, transparent 56%), linear-gradient(162deg, transparent 44%, #fff 50%, transparent 56%); border-radius: 50%; }
+        .smoke { position: absolute; bottom: -20px; left: -50px; width: 100px; height: 30px; background: #ccc; border-radius: 50%; opacity: 0; animation: fadeSmoke 1s linear 4s forwards; }
+        @keyframes rotate { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+        @keyframes rollOut { to { transform: translateX(300vw) rotate(720deg); } }
+        @keyframes fadeSmoke { 0% { opacity: 0.5; } 100% { opacity: 0; transform: translateX(100px); } }
+        canvas { display: block; width: 100vw; height: 100vh; transition: opacity 1s ease; }
     </style>
     <script src="https://unpkg.com/three@0.128.0/build/three.min.js"></script>
     <script src="https://unpkg.com/three@0.128.0/examples/js/loaders/GLTFLoader.js"></script>
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.2/firebase-app.js";
         import { getDatabase, ref, onValue } from "https://www.gstatic.com/firebasejs/9.22.2/firebase-database.js";
-        
         const firebaseConfig = {
             apiKey: "AIzaSyCanbhxTJjMLhy4iZLhklCxyFCHKGF4ZAw",
             authDomain: "car-configurator-616c9.firebaseapp.com",
@@ -31,7 +37,14 @@
     </script>
 </head>
 <body>
-<div id="loader">Laden...</div>
+
+<div id="loader">
+    <div class="tire-container">
+        <div class="tire"></div>
+        <div class="smoke"></div>
+    </div>
+</div>
+
 <script>
     let scene, camera, renderer, autoModel;
     let rotationInput = 0, autoRotate = true, rotationTimeout;
@@ -47,33 +60,32 @@
         document.body.appendChild(renderer.domElement);
         scene.add(new THREE.AmbientLight(0xffffff, 1.5));
         
-        // 1. Model Laden
+        // 1. Model wisselen (HERSTELD)
         window.onValue(window.ref(window.db, 'auto/model'), (snapshot) => {
-            new THREE.GLTFLoader().load(snapshot.val() || './mijnauto.glb', (gltf) => {
+            const modelUrl = snapshot.val() || './mijnauto.glb';
+            new THREE.GLTFLoader().load(modelUrl, (gltf) => {
                 if(autoModel) scene.remove(autoModel);
                 autoModel = gltf.scene;
                 autoModel.scale.set(0.8, 0.8, 0.8);
                 autoModel.position.set(0, 0.5, 0);
                 scene.add(autoModel);
-                document.getElementById('loader').style.display = 'none';
+                
+                // Loader verbergen
+                document.getElementById('loader').style.opacity = '0';
+                setTimeout(() => document.getElementById('loader').style.display = 'none', 1000);
             });
         });
 
-        // 2. Kleur Listener (werkt op elk mesh met de naam CarPrimaryColor)
+        // 2. Kleur (Reageert op alle meshes voor maximale compatibiliteit)
         window.onValue(window.ref(window.db, 'auto/kleur'), (snapshot) => {
             const k = snapshot.val();
             if(autoModel && k) {
-                autoModel.traverse(n => {
-                    if(n.isMesh && n.material.name === "CarPrimaryColor") {
-                        n.material.color.set(k);
-                    }
-                });
+                autoModel.traverse(n => { if(n.isMesh) n.material.color.set(k); });
             }
         });
 
-        // 3. Deuren Listener
-        const parts = ['Door_L', 'Door_R', 'Hood_front', 'Hood_Back'];
-        parts.forEach(part => {
+        // 3. Deuren
+        ['Door_L', 'Door_R', 'Hood_front', 'Hood_Back'].forEach(part => {
             window.onValue(window.ref(window.db, 'auto/deuren/' + part), (s) => {
                 const val = s.val();
                 if(part === 'Door_L') targets.Door_L.val = val ? -0.8 : 0;
