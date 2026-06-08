@@ -147,15 +147,15 @@
         renderer = new THREE.WebGLRenderer({ antialias: true });
         renderer.setSize(6480, 3840);
         
-        // Showroom verlichting die niet overbelicht
         renderer.shadowMap.enabled = true;
         renderer.shadowMap.type = THREE.PCFSoftShadowMap;
         document.body.appendChild(renderer.domElement);
         renderer.domElement.style.opacity = '0';
 
-        renderer.domElement.addEventListener('mousedown', () => { if(isTouchEnabled) isDragging = true; });
-        window.addEventListener('mouseup', () => { isDragging = false; });
-        renderer.domElement.addEventListener('mousemove', (e) => {
+        // Touch interactie toevoegen
+        renderer.domElement.addEventListener('pointerdown', () => { if(isTouchEnabled) isDragging = true; });
+        window.addEventListener('pointerup', () => { isDragging = false; });
+        renderer.domElement.addEventListener('pointermove', (e) => {
             if (isDragging && isTouchEnabled && autoModel) {
                 autoModel.rotation.y += e.movementX * 0.01;
             }
@@ -221,7 +221,7 @@
 
         if(window.db) {
             window.onValue(window.ref(window.db, 'auto/input_mode'), (snapshot) => {
-                isTouchEnabled = snapshot.val() === 'touch';
+                isTouchEnabled = (snapshot.val() === 'touch');
             });
 
             window.onValue(window.ref(window.db, 'auto/kleur'), (snapshot) => {
@@ -276,7 +276,8 @@
     function animate() {
         requestAnimationFrame(animate);
         if(autoModel) {
-            if (!isTouchEnabled) {
+            // Draait automatisch tenzij mode op 'touch' staat
+            if (isTouchEnabled === false) {
                 autoModel.rotation.y += 0.003;
             }
             autoModel.traverse(node => {
