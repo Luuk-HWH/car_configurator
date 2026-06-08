@@ -76,7 +76,10 @@
         let selectedCarIndex = 0;
 
         function updateCarSelector() {
-            document.getElementById('car-name').innerText = cars[selectedCarIndex].name;
+            const selectedCar = cars[selectedCarIndex];
+
+            document.getElementById('car-name').innerText = selectedCar.name;
+            set(ref(db, 'auto/model'), selectedCar.file);
         }
 
         document.getElementById('prev-car').addEventListener('click', () => {
@@ -100,10 +103,6 @@
         });
 
         document.getElementById('select-btn').addEventListener('click', () => {
-            const selectedCar = cars[selectedCarIndex];
-
-            set(ref(db, 'auto/model'), selectedCar.file);
-
             document.getElementById('view-selector').classList.remove('active');
             document.getElementById('view-customizer').classList.add('active');
         });
