@@ -72,26 +72,26 @@
         camera.position.set(0, 3.5, 8);
 
         renderer = new THREE.WebGLRenderer({ antialias: true });
-renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
-renderer.setSize(window.innerWidth, window.innerHeight);
-renderer.outputEncoding = THREE.sRGBEncoding;
-renderer.toneMapping = THREE.ACESFilmicToneMapping;
-renderer.toneMappingExposure = 1.4;
-document.body.appendChild(renderer.domElement);
+        renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.outputEncoding = THREE.sRGBEncoding;
+        renderer.toneMapping = THREE.ACESFilmicToneMapping;
+        renderer.toneMappingExposure = 1.4;
+        document.body.appendChild(renderer.domElement);
 
         scene.add(new THREE.AmbientLight(0xffffff, 2.2));
 
-const keyLight = new THREE.DirectionalLight(0xffffff, 2.5);
-keyLight.position.set(5, 8, 6);
-scene.add(keyLight);
+        const keyLight = new THREE.DirectionalLight(0xffffff, 2.5);
+        keyLight.position.set(5, 8, 6);
+        scene.add(keyLight);
 
-const fillLight = new THREE.DirectionalLight(0xffffff, 1.4);
-fillLight.position.set(-5, 4, -4);
-scene.add(fillLight);
+        const fillLight = new THREE.DirectionalLight(0xffffff, 1.4);
+        fillLight.position.set(-5, 4, -4);
+        scene.add(fillLight);
 
-const frontLight = new THREE.DirectionalLight(0xffffff, 1.8);
-frontLight.position.set(0, 3, 8);
-scene.add(frontLight);
+        const frontLight = new THREE.DirectionalLight(0xffffff, 1.8);
+        frontLight.position.set(0, 3, 8);
+        scene.add(frontLight);
 
         window.addEventListener('resize', onWindowResize);
 
@@ -167,31 +167,31 @@ scene.add(frontLight);
         autoModel.traverse(node => {
             if (!node.isMesh || !node.material) return;
 
-            const nodeName = node.name || '';
+            const nodeName = (node.name || '').toLowerCase();
             const materials = Array.isArray(node.material) ? node.material : [node.material];
 
-            let hasPaintMaterial = false;
+            let shouldColorThisMesh = nodeName === 'carprimarycolor';
 
             const updatedMaterials = materials.map(material => {
-                const materialName = material.name || '';
+                const materialName = (material.name || '').toLowerCase();
 
-                if (nodeName !== 'CarPrimaryColor' && materialName !== 'CarPrimaryColor') {
+                if (materialName === 'carprimarycolor') {
+                    shouldColorThisMesh = true;
+                }
+
+                if (!shouldColorThisMesh && materialName !== 'carprimarycolor') {
                     return material;
                 }
 
-                hasPaintMaterial = true;
-
-                const clonedMaterial = material.clone();
-
-                if (clonedMaterial.color) {
-                    clonedMaterial.color.set(currentColor);
-                    clonedMaterial.needsUpdate = true;
-                }
-
-                return clonedMaterial;
+                return new THREE.MeshStandardMaterial({
+                    name: material.name || 'CarPrimaryColor',
+                    color: new THREE.Color(currentColor),
+                    metalness: 0.25,
+                    roughness: 0.35
+                });
             });
 
-            if (!hasPaintMaterial) return;
+            if (!shouldColorThisMesh) return;
 
             node.material = Array.isArray(node.material)
                 ? updatedMaterials
