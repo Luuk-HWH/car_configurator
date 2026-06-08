@@ -72,11 +72,26 @@
         camera.position.set(0, 3.5, 8);
 
         renderer = new THREE.WebGLRenderer({ antialias: true });
-        renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
-        renderer.setSize(window.innerWidth, window.innerHeight);
-        document.body.appendChild(renderer.domElement);
+renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+renderer.setSize(window.innerWidth, window.innerHeight);
+renderer.outputEncoding = THREE.sRGBEncoding;
+renderer.toneMapping = THREE.ACESFilmicToneMapping;
+renderer.toneMappingExposure = 1.4;
+document.body.appendChild(renderer.domElement);
 
-        scene.add(new THREE.AmbientLight(0xffffff, 1.5));
+        scene.add(new THREE.AmbientLight(0xffffff, 2.2));
+
+const keyLight = new THREE.DirectionalLight(0xffffff, 2.5);
+keyLight.position.set(5, 8, 6);
+scene.add(keyLight);
+
+const fillLight = new THREE.DirectionalLight(0xffffff, 1.4);
+fillLight.position.set(-5, 4, -4);
+scene.add(fillLight);
+
+const frontLight = new THREE.DirectionalLight(0xffffff, 1.8);
+frontLight.position.set(0, 3, 8);
+scene.add(frontLight);
 
         window.addEventListener('resize', onWindowResize);
 
