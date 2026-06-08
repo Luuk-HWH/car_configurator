@@ -61,7 +61,7 @@
         Door_L: { axis: 'z', val: 0 },
         Door_R: { axis: 'z', val: 0 },
         Hood_front: { axis: 'x', val: 0 },
-        Hood_Back: { axis: 'x', val: 2 }
+        Hood_Back: { axis: 'x', val: -4 }
     };
 
     function init() {
@@ -182,7 +182,9 @@
                 const clonedMaterial = material.clone();
 
                 if (clonedMaterial.color) {
-                    clonedMaterial.color.set(currentColor);
+    clonedMaterial.color.set(currentColor);
+    clonedMaterial.color.multiplyScalar(0.55);
+}
                 }
 
                 if ('metalness' in clonedMaterial) clonedMaterial.metalness = 0.25;
