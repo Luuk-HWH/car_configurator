@@ -14,7 +14,7 @@
         .arrow { font-size: 50px; cursor: pointer; padding: 20px; background: #f4f4f4; border-radius: 10px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
         #select-btn, #back-btn, .action-btn { padding: 20px 40px; font-size: 20px; cursor: pointer; background: #333; color: white; border: none; border-radius: 10px; }
 
-        #sub-menu { height: 200px; display: flex; justify-content: center; align-items: center; gap: 20px; margin: 20px 0; border: 2px dashed #ccc; border-radius: 10px; }
+        #sub-menu { min-height: 200px; display: flex; justify-content: center; align-items: center; flex-wrap: wrap; gap: 15px; margin: 20px 0; border: 2px dashed #ccc; border-radius: 10px; }
         
         .bottom-nav { display: flex; justify-content: center; gap: 40px; padding-top: 20px; border-top: 2px solid #eee; }
         .nav-icon { font-size: 40px; cursor: pointer; transition: transform 0.2s; }
@@ -125,15 +125,24 @@
         });
 
         document.getElementById('btn-doors').addEventListener('click', () => {
-            subMenu.innerHTML = '<button class="action-btn" id="door-toggle">Open/Sluit deuren</button>';
-            document.getElementById('door-toggle').addEventListener('click', () => {
-                const isOpened = true; // Logica zoals in je originele script
-                set(ref(db, 'auto/deuren'), !isOpened);
+            subMenu.innerHTML = '';
+            const parts = ['Door_L', 'Door_R', 'Hood_front', 'Hood_Back'];
+            parts.forEach(part => {
+                const btn = document.createElement('button');
+                btn.className = 'action-btn';
+                btn.innerText = part;
+                let open = false;
+                btn.addEventListener('click', () => {
+                    open = !open;
+                    set(ref(db, 'auto/deuren/' + part), open ? 1 : 0);
+                });
+                subMenu.appendChild(btn);
             });
         });
 
         document.getElementById('btn-touch').addEventListener('click', () => {
-            subMenu.innerHTML = '<h3>Touchpad Modus actief</h3><p>Gebruik de 3D-viewer om te draaien.</p>';
+            subMenu.innerHTML = '<h3>Touchpad Modus</h3><p>Gebruik je vinger op het hoofdscherm om de auto te draaien.</p>';
+            set(ref(db, 'auto/input_mode'), 'touch');
         });
     </script>
 </body>
