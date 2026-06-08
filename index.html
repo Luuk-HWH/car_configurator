@@ -40,8 +40,9 @@
 <div id="loader"><div class="tire-container"><div class="tire"></div><div class="smoke"></div></div></div>
 <script>
     let scene, camera, renderer, autoModel;
-    let rotationOffset = 0;
-    let targets = { Door_L: { axis: 'z', val: 0 }, Door_R: { axis: 'z', val: 0 }, Hood_front: { axis: 'x', val: 0 }, Hood_Back: { axis: 'x', val: 1 } };
+    let rotationInput = 0;
+    let autoRotate = true;
+    let rotationTimeout;
 
     function init() {
         scene = new THREE.Scene();
@@ -60,9 +61,16 @@
         dirLight.castShadow = true;
         scene.add(dirLight);
 
-        // Luister naar rotatie input van de tablet
+        // Luister naar de tablet input
         window.onValue(window.ref(window.db, 'auto/rotatie_input'), (snapshot) => {
-            rotationOffset = snapshot.val() * 0.01;
+            rotationInput = snapshot.val();
+            autoRotate = false; // Gebruiker neemt over
+            
+            // Reset de timer bij elke nieuwe input
+            clearTimeout(rotationTimeout);
+            rotationTimeout = setTimeout(() => {
+                autoRotate = true; // Na 2 sec stilte weer auto-draaien
+            }, 2000);
         });
 
         window.onValue(window.ref(window.db, 'auto/model'), (snapshot) => {
@@ -82,10 +90,11 @@
     function animate() {
         requestAnimationFrame(animate);
         if(autoModel) {
-            // Auto draait automatisch OF reageert op tablet input
-            autoModel.rotation.y += 0.003; 
-            autoModel.rotation.y += rotationOffset;
-            rotationOffset = 0; // Reset na input
+            if (autoRotate) {
+                autoModel.rotation.y += 0.003; // Standaard auto-rotatie
+            } else {
+                autoModel.rotation.y += rotationInput; // Tablet input
+            }
         }
         renderer.render(scene, camera);
     }
