@@ -167,31 +167,32 @@
         autoModel.traverse(node => {
             if (!node.isMesh || !node.material) return;
 
-            const nodeName = (node.name || '').toLowerCase();
             const materials = Array.isArray(node.material) ? node.material : [node.material];
-
-            let shouldColorThisMesh = nodeName === 'carprimarycolor';
+            let changedMaterial = false;
 
             const updatedMaterials = materials.map(material => {
                 const materialName = (material.name || '').toLowerCase();
 
-                if (materialName === 'carprimarycolor') {
-                    shouldColorThisMesh = true;
-                }
-
-                if (!shouldColorThisMesh && materialName !== 'carprimarycolor') {
+                if (materialName !== 'carprimarycolor') {
                     return material;
                 }
 
-                return new THREE.MeshStandardMaterial({
-                    name: material.name || 'CarPrimaryColor',
-                    color: new THREE.Color(currentColor),
-                    metalness: 0.25,
-                    roughness: 0.35
-                });
+                changedMaterial = true;
+
+                const clonedMaterial = material.clone();
+
+                if (clonedMaterial.color) {
+                    clonedMaterial.color.set(currentColor);
+                }
+
+                if ('metalness' in clonedMaterial) clonedMaterial.metalness = 0.25;
+                if ('roughness' in clonedMaterial) clonedMaterial.roughness = 0.35;
+
+                clonedMaterial.needsUpdate = true;
+                return clonedMaterial;
             });
 
-            if (!shouldColorThisMesh) return;
+            if (!changedMaterial) return;
 
             node.material = Array.isArray(node.material)
                 ? updatedMaterials
