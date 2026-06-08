@@ -160,47 +160,46 @@
     }
 
     function applyCarColor(color) {
-        currentColor = color || currentColor;
+    currentColor = color || currentColor;
 
-        if (!autoModel) return;
+    if (!autoModel) return;
 
-        autoModel.traverse(node => {
-            if (!node.isMesh || !node.material) return;
+    autoModel.traverse(node => {
+        if (!node.isMesh || !node.material) return;
 
-            const materials = Array.isArray(node.material) ? node.material : [node.material];
-            let changedMaterial = false;
+        const materials = Array.isArray(node.material) ? node.material : [node.material];
+        let changedMaterial = false;
 
-            const updatedMaterials = materials.map(material => {
-                const materialName = (material.name || '').toLowerCase();
+        const updatedMaterials = materials.map(material => {
+            const materialName = (material.name || '').toLowerCase();
 
-                if (materialName !== 'carprimarycolor') {
-                    return material;
-                }
+            if (materialName !== 'carprimarycolor') {
+                return material;
+            }
 
-                changedMaterial = true;
+            changedMaterial = true;
 
-                const clonedMaterial = material.clone();
+            const clonedMaterial = material.clone();
 
-                if (clonedMaterial.color) {
-    clonedMaterial.color.set(currentColor);
-    clonedMaterial.color.multiplyScalar(0.55);
-}
-                }
+            if (clonedMaterial.color) {
+                clonedMaterial.color.set(currentColor);
+                clonedMaterial.color.multiplyScalar(0.65);
+            }
 
-                if ('metalness' in clonedMaterial) clonedMaterial.metalness = 0.25;
-                if ('roughness' in clonedMaterial) clonedMaterial.roughness = 0.35;
+            if ('metalness' in clonedMaterial) clonedMaterial.metalness = 0.25;
+            if ('roughness' in clonedMaterial) clonedMaterial.roughness = 0.35;
 
-                clonedMaterial.needsUpdate = true;
-                return clonedMaterial;
-            });
-
-            if (!changedMaterial) return;
-
-            node.material = Array.isArray(node.material)
-                ? updatedMaterials
-                : updatedMaterials[0];
+            clonedMaterial.needsUpdate = true;
+            return clonedMaterial;
         });
-    }
+
+        if (!changedMaterial) return;
+
+        node.material = Array.isArray(node.material)
+            ? updatedMaterials
+            : updatedMaterials[0];
+    });
+}
 
     function showLoader() {
         const loader = document.getElementById('loader');
