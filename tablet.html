@@ -10,7 +10,46 @@
         .header-bar { display: flex; justify-content: space-between; margin-bottom: 20px; }
         #car-selector { display: flex; align-items: center; justify-content: center; gap: 40px; margin-bottom: 30px; }
         .arrow { font-size: 50px; cursor: pointer; padding: 20px; background: #f4f4f4; border-radius: 10px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
-        #select-btn, #back-btn, .action-btn, #fullscreen-btn { padding: 20px 40px; font-size: 20px; cursor: pointer; background: #333; color: white; border: none; border-radius: 10px; }
+
+        #select-btn, #back-btn, .action-btn {
+            padding: 20px 40px;
+            font-size: 20px;
+            cursor: pointer;
+            background: #333;
+            color: white;
+            border: none;
+            border-radius: 10px;
+        }
+
+        #fullscreen-btn {
+            width: 58px;
+            height: 58px;
+            padding: 0;
+            cursor: pointer;
+            background: #f4f4f4;
+            color: #111;
+            border: none;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+
+        .fullscreen-icon {
+            width: 31px;
+            height: 31px;
+            fill: none;
+            stroke: currentColor;
+            stroke-width: 2.4;
+            stroke-linecap: round;
+            stroke-linejoin: round;
+        }
+
+        .icon-compress { display: none; }
+        .is-fullscreen .icon-expand { display: none; }
+        .is-fullscreen .icon-compress { display: block; }
+
         #sub-menu { min-height: 200px; display: flex; justify-content: center; align-items: center; flex-wrap: wrap; gap: 15px; margin: 20px 0; border: 2px dashed #ccc; border-radius: 10px; }
         .bottom-nav { display: flex; justify-content: center; gap: 24px; padding-top: 20px; border-top: 2px solid #eee; }
         .nav-icon { font-size: 22px; cursor: pointer; transition: transform 0.2s; padding: 14px 22px; background: #f4f4f4; border-radius: 10px; font-weight: bold; }
@@ -34,7 +73,14 @@
     <div id="view-customizer" class="view">
         <div class="header-bar">
             <button id="back-btn">Back</button>
-            <button id="fullscreen-btn">Fullscreen</button>
+            <button id="fullscreen-btn" type="button" aria-label="Enter fullscreen" title="Fullscreen">
+                <svg class="fullscreen-icon icon-expand" viewBox="0 0 24 24">
+                    <path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5" />
+                </svg>
+                <svg class="fullscreen-icon icon-compress" viewBox="0 0 24 24">
+                    <path d="M9 4v5H4M15 4v5h5M9 20v-5H4M15 20v-5h5" />
+                </svg>
+            </button>
         </div>
         <h1>Configurator</h1>
         <div id="sub-menu"><p>Choose an option below</p></div>
@@ -63,42 +109,27 @@
         const db = getDatabase(app);
 
         const cars = [
-            {
-                name: 'Ford Mustang',
-                file: './mijnauto.glb'
-            },
-            {
-                name: 'Bugatti Veyron',
-                file: './bugatti_veyron_fully_rigged..glb'
-            }
+            { name: 'Ford Mustang', file: './mijnauto.glb' },
+            { name: 'Bugatti Veyron', file: './bugatti_veyron_fully_rigged..glb' }
         ];
 
         let selectedCarIndex = 0;
 
         function updateCarSelector() {
             const selectedCar = cars[selectedCarIndex];
-
             document.getElementById('car-name').innerText = selectedCar.name;
             set(ref(db, 'auto/model'), selectedCar.file);
         }
 
         document.getElementById('prev-car').addEventListener('click', () => {
             selectedCarIndex--;
-
-            if (selectedCarIndex < 0) {
-                selectedCarIndex = cars.length - 1;
-            }
-
+            if (selectedCarIndex < 0) selectedCarIndex = cars.length - 1;
             updateCarSelector();
         });
 
         document.getElementById('next-car').addEventListener('click', () => {
             selectedCarIndex++;
-
-            if (selectedCarIndex >= cars.length) {
-                selectedCarIndex = 0;
-            }
-
+            if (selectedCarIndex >= cars.length) selectedCarIndex = 0;
             updateCarSelector();
         });
 
@@ -112,10 +143,27 @@
             document.getElementById('view-selector').classList.add('active');
         });
 
-        document.getElementById('fullscreen-btn').addEventListener('click', () => {
-            if (!document.fullscreenElement) document.documentElement.requestFullscreen();
-            else document.exitFullscreen();
+        const fullscreenBtn = document.getElementById('fullscreen-btn');
+
+        function updateFullscreenButton() {
+            const isFullscreen = !!document.fullscreenElement;
+            document.documentElement.classList.toggle('is-fullscreen', isFullscreen);
+            fullscreenBtn.setAttribute('aria-label', isFullscreen ? 'Exit fullscreen' : 'Enter fullscreen');
+            fullscreenBtn.setAttribute('title', isFullscreen ? 'Exit fullscreen' : 'Fullscreen');
+        }
+
+        fullscreenBtn.addEventListener('click', async () => {
+            if (!document.fullscreenElement) {
+                await document.documentElement.requestFullscreen();
+            } else {
+                await document.exitFullscreen();
+            }
+
+            updateFullscreenButton();
         });
+
+        document.addEventListener('fullscreenchange', updateFullscreenButton);
+        updateFullscreenButton();
 
         document.getElementById('btn-touch').addEventListener('click', () => {
             const subMenu = document.getElementById('sub-menu');
@@ -131,7 +179,6 @@
             pad.addEventListener('touchmove', (e) => {
                 const currentX = e.touches[0].clientX;
                 const delta = (currentX - lastX) * 0.05;
-
                 set(ref(db, 'auto/rotatie_input'), delta);
                 lastX = currentX;
             }, { passive: true });
