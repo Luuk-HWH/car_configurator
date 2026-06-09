@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="nl">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
     <title>Car Configurator Controller</title>
@@ -12,9 +12,9 @@
         .arrow { font-size: 50px; cursor: pointer; padding: 20px; background: #f4f4f4; border-radius: 10px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
         #select-btn, #back-btn, .action-btn, #fullscreen-btn { padding: 20px 40px; font-size: 20px; cursor: pointer; background: #333; color: white; border: none; border-radius: 10px; }
         #sub-menu { min-height: 200px; display: flex; justify-content: center; align-items: center; flex-wrap: wrap; gap: 15px; margin: 20px 0; border: 2px dashed #ccc; border-radius: 10px; }
-        .bottom-nav { display: flex; justify-content: center; gap: 40px; padding-top: 20px; border-top: 2px solid #eee; }
-        .nav-icon { font-size: 40px; cursor: pointer; transition: transform 0.2s; }
-        .nav-icon:hover { transform: scale(1.2); }
+        .bottom-nav { display: flex; justify-content: center; gap: 24px; padding-top: 20px; border-top: 2px solid #eee; }
+        .nav-icon { font-size: 22px; cursor: pointer; transition: transform 0.2s; padding: 14px 22px; background: #f4f4f4; border-radius: 10px; font-weight: bold; }
+        .nav-icon:hover { transform: scale(1.08); }
         .color-dot { width: 70px; height: 70px; border-radius: 50%; cursor: pointer; border: 4px solid transparent; transition: transform 0.2s; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
         #touch-pad { width: 100%; height: 200px; background: #f0f0f0; border-radius: 10px; display: flex; align-items: center; justify-content: center; touch-action: none; border: 2px solid #333; font-weight: bold; }
     </style>
@@ -22,26 +22,26 @@
 <body>
 
     <div id="view-selector" class="view active">
-        <h1>Kies je auto</h1>
+        <h1>Choose your car</h1>
         <div id="car-selector">
             <div class="arrow" id="prev-car">&lt;</div>
             <h2 id="car-name">Ford Mustang</h2>
             <div class="arrow" id="next-car">&gt;</div>
         </div>
-        <button id="select-btn">Selecteer</button>
+        <button id="select-btn">Select</button>
     </div>
 
     <div id="view-customizer" class="view">
         <div class="header-bar">
-            <button id="back-btn">Terug</button>
+            <button id="back-btn">Back</button>
             <button id="fullscreen-btn">Fullscreen</button>
         </div>
         <h1>Configurator</h1>
-        <div id="sub-menu"><p>Kies een optie hieronder</p></div>
+        <div id="sub-menu"><p>Choose an option below</p></div>
         <div class="bottom-nav">
-            <div class="nav-icon" id="btn-color">🎨</div>
-            <div class="nav-icon" id="btn-doors">🚗</div>
-            <div class="nav-icon" id="btn-touch">👆</div>
+            <div class="nav-icon" id="btn-color">Color</div>
+            <div class="nav-icon" id="btn-doors">Doors</div>
+            <div class="nav-icon" id="btn-touch">Rotate</div>
         </div>
     </div>
 
@@ -119,7 +119,7 @@
 
         document.getElementById('btn-touch').addEventListener('click', () => {
             const subMenu = document.getElementById('sub-menu');
-            subMenu.innerHTML = '<h3>Sleep horizontaal om te draaien</h3><div id="touch-pad">SLEEP HIER</div>';
+            subMenu.innerHTML = '<h3>Drag horizontally to rotate</h3><div id="touch-pad">DRAG HERE</div>';
 
             let lastX = 0;
             const pad = document.getElementById('touch-pad');
@@ -154,16 +154,23 @@
             const subMenu = document.getElementById('sub-menu');
             subMenu.innerHTML = '';
 
-            ['Door_L', 'Door_R', 'Hood_front', 'Hood_Back'].forEach(part => {
+            const doorControls = [
+                { label: 'Left door', part: 'Door_L' },
+                { label: 'Right door', part: 'Door_R' },
+                { label: 'Hood', part: 'Hood_front' },
+                { label: 'Trunk', part: 'Hood_Back' }
+            ];
+
+            doorControls.forEach(control => {
                 const btn = document.createElement('button');
                 btn.className = 'action-btn';
-                btn.innerText = part;
+                btn.innerText = control.label;
 
                 let open = false;
 
                 btn.addEventListener('click', () => {
                     open = !open;
-                    set(ref(db, 'auto/deuren/' + part), open ? 1 : 0);
+                    set(ref(db, 'auto/deuren/' + control.part), open ? 1 : 0);
                 });
 
                 subMenu.appendChild(btn);
