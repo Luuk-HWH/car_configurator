@@ -57,6 +57,9 @@
     let rotationTimeout;
     let currentColor = '#6E2E2E';
 
+    const MODEL_SCALE = 1.18;
+    const MODEL_BASE_Y = -0.45;
+
     const targets = {
         Door_L: { axis: 'z', val: 0 },
         Door_R: { axis: 'z', val: 0 },
@@ -68,15 +71,16 @@
         scene = new THREE.Scene();
         scene.background = new THREE.Color(0xffffff);
 
-        camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 1000);
-        camera.position.set(0, 3.5, 8);
+        camera = new THREE.PerspectiveCamera(42, window.innerWidth / window.innerHeight, 0.1, 1000);
+        camera.position.set(0, 2.6, 6.4);
+        camera.lookAt(0, 0.45, 0);
 
         renderer = new THREE.WebGLRenderer({ antialias: true });
         renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
         renderer.setSize(window.innerWidth, window.innerHeight);
         renderer.outputEncoding = THREE.sRGBEncoding;
         renderer.toneMapping = THREE.ACESFilmicToneMapping;
-        renderer.toneMappingExposure = 1.4;
+        renderer.toneMappingExposure = 1.15;
         document.body.appendChild(renderer.domElement);
 
         scene.add(new THREE.AmbientLight(0xffffff, 1.1));
@@ -144,7 +148,7 @@
                 }
 
                 const modelRoot = gltf.scene;
-                modelRoot.scale.set(0.8, 0.8, 0.8);
+                modelRoot.scale.set(MODEL_SCALE, MODEL_SCALE, MODEL_SCALE);
 
                 if (modelUrl.toLowerCase().includes('bugatti')) {
                     modelRoot.updateMatrixWorld(true);
@@ -157,11 +161,11 @@
                     modelRoot.position.z -= center.z;
 
                     autoModel = new THREE.Group();
-                    autoModel.position.set(0, 0.5, 0);
+                    autoModel.position.set(0, MODEL_BASE_Y, 0);
                     autoModel.add(modelRoot);
                 } else {
                     autoModel = modelRoot;
-                    autoModel.position.set(0, 0.5, 0);
+                    autoModel.position.set(0, MODEL_BASE_Y, 0);
                 }
 
                 scene.add(autoModel);
