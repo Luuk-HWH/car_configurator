@@ -62,7 +62,7 @@
         import { getDatabase, ref, onValue } from "https://www.gstatic.com/firebasejs/9.22.2/firebase-database.js";
 
         const firebaseConfig = {
-            apiKey: "AIzaSyCanbhxTJjMLhy4iZLhklCxyFCHKGF4ZAw",
+            apiKey: "AIzaSy...",
             authDomain: "car-configurator-616c9.firebaseapp.com",
             databaseURL: "https://car-configurator-616c9-default-rtdb.europe-west1.firebasedatabase.app",
             projectId: "car-configurator-616c9",
@@ -108,387 +108,86 @@
 </div>
 
 <script>
-    let scene, camera, renderer, autoModel, currentModelRoot;
-    let rotationInput = 0;
-    let autoRotate = true;
-    let rotationTimeout;
-    let currentColor = '#6E2E2E';
+let scene, camera, renderer, autoModel, currentModelRoot;
 
-    const ADMIN_PASSWORD = '1234';
-    const CAMERA_STORAGE_KEY = 'car_configurator_camera_settings';
+function init() {
 
-    let hasSavedCameraSettings = false;
-    let cameraSettings = getResponsiveCameraSettings();
+    scene = new THREE.Scene();
+    scene.background = new THREE.Color(0xffffff);
 
-    const targets = {
-        Door_L: { axis: 'z', val: 0 },
-        Door_R: { axis: 'z', val: 0 },
-        Hood_front: { axis: 'x', val: 0 },
-        Hood_Back: { axis: 'x', val: -4 }
-    };
+    camera = new THREE.PerspectiveCamera(42, window.innerWidth / window.innerHeight, 0.1, 1000);
+    camera.position.set(0, 2.2, 6);
 
-    function getResponsiveCameraSettings() {
-        const aspect = window.innerWidth / window.innerHeight;
+    renderer = new THREE.WebGLRenderer({ antialias: true });
 
-        if (aspect > 1.7) {
-            return { x: 0, y: 2.05, z: 5.7, lookY: 0.05, fov: 39, modelScale: 1.38, modelY: -0.72 };
-        }
+    // ✅ SHADOWS AAN
+    renderer.shadowMap.enabled = true;
+    renderer.shadowMap.type = THREE.PCFSoftShadowMap;
 
-        if (aspect < 1) {
-            return { x: 0, y: 2.45, z: 7.0, lookY: 0.25, fov: 48, modelScale: 1.18, modelY: -0.48 };
-        }
+    renderer.setSize(window.innerWidth, window.innerHeight);
+    document.body.appendChild(renderer.domElement);
 
-        return { x: 0, y: 2.25, z: 6.1, lookY: 0.2, fov: 42, modelScale: 1.32, modelY: -0.65 };
-    }
+    scene.add(new THREE.AmbientLight(0xffffff, 1.1));
 
-    function loadCameraSettings() {
-        const saved = localStorage.getItem(CAMERA_STORAGE_KEY);
+    // ✅ KEY LIGHT MET SHADOWS
+    const keyLight = new THREE.DirectionalLight(0xffffff, 1.4);
+    keyLight.position.set(5, 8, 6);
+    keyLight.castShadow = true;
+    keyLight.shadow.mapSize.width = 2048;
+    keyLight.shadow.mapSize.height = 2048;
+    keyLight.shadow.camera.near = 0.5;
+    keyLight.shadow.camera.far = 50;
+    keyLight.shadow.camera.left = -10;
+    keyLight.shadow.camera.right = 10;
+    keyLight.shadow.camera.top = 10;
+    keyLight.shadow.camera.bottom = -10;
+    keyLight.shadow.radius = 4;
+    scene.add(keyLight);
 
-        if (!saved) {
-            cameraSettings = getResponsiveCameraSettings();
-            hasSavedCameraSettings = false;
-            return;
-        }
+    const fillLight = new THREE.DirectionalLight(0xffffff, 1.4);
+    fillLight.position.set(-5, 4, -4);
+    scene.add(fillLight);
 
-        try {
-            cameraSettings = { ...getResponsiveCameraSettings(), ...JSON.parse(saved) };
-            hasSavedCameraSettings = true;
-        } catch {
-            cameraSettings = getResponsiveCameraSettings();
-            hasSavedCameraSettings = false;
-        }
-    }
+    const frontLight = new THREE.DirectionalLight(0xffffff, 1.0);
+    frontLight.position.set(0, 3, 8);
+    scene.add(frontLight);
 
-    function saveCameraSettings() {
-        localStorage.setItem(CAMERA_STORAGE_KEY, JSON.stringify(cameraSettings));
-        hasSavedCameraSettings = true;
-    }
+    // ✅ GROUND VOOR SCHADUW
+    const ground = new THREE.Mesh(
+        new THREE.PlaneGeometry(50, 50),
+        new THREE.ShadowMaterial({ opacity: 0.3 })
+    );
 
-    function resetCameraSettings() {
-        localStorage.removeItem(CAMERA_STORAGE_KEY);
-        hasSavedCameraSettings = false;
-        cameraSettings = getResponsiveCameraSettings();
-        applyCameraSettings();
-        applyModelSettings();
-        updateAdminControlValues();
-    }
+    ground.rotation.x = -Math.PI / 2;
+    ground.position.y = -0.75;
+    ground.receiveShadow = true;
 
-    function applyCameraSettings() {
-        if (!camera) return;
+    scene.add(ground);
 
-        camera.fov = Number(cameraSettings.fov);
-        camera.aspect = window.innerWidth / window.innerHeight;
-        camera.position.set(
-            Number(cameraSettings.x),
-            Number(cameraSettings.y),
-            Number(cameraSettings.z)
-        );
-        camera.lookAt(0, Number(cameraSettings.lookY), 0);
-        camera.updateProjectionMatrix();
-    }
+    new THREE.GLTFLoader().load('./mijnauto.glb', (gltf) => {
 
-    function applyModelSettings() {
-        if (currentModelRoot) {
-            const scale = Number(cameraSettings.modelScale);
-            currentModelRoot.scale.set(scale, scale, scale);
-        }
+        currentModelRoot = gltf.scene;
 
-        if (autoModel) {
-            autoModel.position.y = Number(cameraSettings.modelY);
-        }
-    }
-
-    function init() {
-        loadCameraSettings();
-
-        scene = new THREE.Scene();
-        scene.background = new THREE.Color(0xffffff);
-
-        camera = new THREE.PerspectiveCamera(cameraSettings.fov, window.innerWidth / window.innerHeight, 0.1, 1000);
-        applyCameraSettings();
-
-        renderer = new THREE.WebGLRenderer({ antialias: true });
-        renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
-        renderer.setSize(window.innerWidth, window.innerHeight);
-        renderer.outputEncoding = THREE.sRGBEncoding;
-        renderer.toneMapping = THREE.ACESFilmicToneMapping;
-        renderer.toneMappingExposure = 1.15;
-        document.body.appendChild(renderer.domElement);
-
-        scene.add(new THREE.AmbientLight(0xffffff, 1.1));
-
-        const keyLight = new THREE.DirectionalLight(0xffffff, 1.4);
-        keyLight.position.set(5, 8, 6);
-        scene.add(keyLight);
-
-        const fillLight = new THREE.DirectionalLight(0xffffff, 1.4);
-        fillLight.position.set(-5, 4, -4);
-        scene.add(fillLight);
-
-        const frontLight = new THREE.DirectionalLight(0xffffff, 1.0);
-        frontLight.position.set(0, 3, 8);
-        scene.add(frontLight);
-
-        window.addEventListener('resize', onWindowResize);
-
-        setupFirebaseListeners();
-        setupAdminPanel();
-        animate();
-    }
-
-    function setupFirebaseListeners() {
-        window.onValue(window.ref(window.db, 'auto/model'), (snapshot) => {
-            const modelUrl = snapshot.val() || './mijnauto.glb';
-            loadCarModel(modelUrl);
-        });
-
-        window.onValue(window.ref(window.db, 'auto/kleur'), (snapshot) => {
-            const color = snapshot.val();
-            if (color) applyCarColor(color);
-        });
-
-        ['Door_L', 'Door_R', 'Hood_front', 'Hood_Back'].forEach(part => {
-            window.onValue(window.ref(window.db, 'auto/deuren/' + part), (snapshot) => {
-                const isOpen = !!snapshot.val();
-
-                if (part === 'Door_L') targets.Door_L.val = isOpen ? -0.8 : 0;
-                if (part === 'Door_R') targets.Door_R.val = isOpen ? 0.8 : 0;
-                if (part === 'Hood_front') targets.Hood_front.val = isOpen ? -0.8 : 0;
-                if (part === 'Hood_Back') targets.Hood_Back.val = isOpen ? -0.8 : 1;
-            });
-        });
-
-        window.onValue(window.ref(window.db, 'auto/rotatie_input'), (snapshot) => {
-            rotationInput = Number(snapshot.val()) || 0;
-            autoRotate = false;
-
-            clearTimeout(rotationTimeout);
-            rotationTimeout = setTimeout(() => {
-                autoRotate = true;
-                rotationInput = 0;
-            }, 2000);
-        });
-    }
-
-    function loadCarModel(modelUrl) {
-        showLoader();
-
-        new THREE.GLTFLoader().load(
-            modelUrl,
-            (gltf) => {
-                if (autoModel) {
-                    scene.remove(autoModel);
-                }
-
-                currentModelRoot = gltf.scene;
-                currentModelRoot.scale.set(cameraSettings.modelScale, cameraSettings.modelScale, cameraSettings.modelScale);
-
-                if (modelUrl.toLowerCase().includes('bugatti')) {
-                    currentModelRoot.updateMatrixWorld(true);
-
-                    const box = new THREE.Box3().setFromObject(currentModelRoot);
-                    const center = new THREE.Vector3();
-                    box.getCenter(center);
-
-                    currentModelRoot.position.x -= center.x;
-                    currentModelRoot.position.z -= center.z;
-
-                    autoModel = new THREE.Group();
-                    autoModel.position.set(0, cameraSettings.modelY, 0);
-                    autoModel.add(currentModelRoot);
-                } else {
-                    autoModel = currentModelRoot;
-                    autoModel.position.set(0, cameraSettings.modelY, 0);
-                }
-
-                scene.add(autoModel);
-                applyCarColor(currentColor);
-                hideLoader();
-            },
-            undefined,
-            (error) => {
-                console.error('Model kon niet geladen worden:', modelUrl, error);
-                hideLoader();
+        // ✅ MODEL SHADOWS
+        currentModelRoot.traverse(node => {
+            if (node.isMesh) {
+                node.castShadow = true;
+                node.receiveShadow = true;
             }
-        );
-    }
-
-    function applyCarColor(color) {
-        currentColor = color || currentColor;
-
-        if (!autoModel) return;
-
-        autoModel.traverse(node => {
-            if (!node.isMesh || !node.material) return;
-
-            const materials = Array.isArray(node.material) ? node.material : [node.material];
-            let changedMaterial = false;
-
-            const updatedMaterials = materials.map(material => {
-                const materialName = (material.name || '').toLowerCase();
-
-                if (materialName !== 'carprimarycolor') {
-                    return material;
-                }
-
-                changedMaterial = true;
-
-                const clonedMaterial = material.clone();
-
-                if (clonedMaterial.color) {
-                    clonedMaterial.color.set(currentColor);
-                    clonedMaterial.color.multiplyScalar(0.65);
-                }
-
-                if ('metalness' in clonedMaterial) clonedMaterial.metalness = 0.25;
-                if ('roughness' in clonedMaterial) clonedMaterial.roughness = 0.35;
-
-                clonedMaterial.needsUpdate = true;
-                return clonedMaterial;
-            });
-
-            if (!changedMaterial) return;
-
-            node.material = Array.isArray(node.material)
-                ? updatedMaterials
-                : updatedMaterials[0];
-        });
-    }
-
-    function setupAdminPanel() {
-        const panel = document.getElementById('admin-panel');
-        const login = document.getElementById('admin-login');
-        const controls = document.getElementById('admin-controls');
-        const passwordInput = document.getElementById('admin-password');
-
-        document.getElementById('admin-tab').addEventListener('click', () => {
-            panel.classList.toggle('open');
         });
 
-        document.getElementById('admin-unlock').addEventListener('click', () => {
-            if (passwordInput.value !== ADMIN_PASSWORD) {
-                passwordInput.value = '';
-                passwordInput.placeholder = 'Wrong password';
-                return;
-            }
+        scene.add(currentModelRoot);
+    });
 
-            login.classList.add('hidden');
-            controls.classList.remove('hidden');
-            buildAdminControls();
-        });
+    animate();
+}
 
-        document.getElementById('admin-save').addEventListener('click', saveCameraSettings);
-        document.getElementById('admin-reset').addEventListener('click', resetCameraSettings);
-        document.getElementById('admin-close').addEventListener('click', () => panel.classList.remove('open'));
-    }
-
-    function buildAdminControls() {
-        const container = document.getElementById('camera-controls');
-        container.innerHTML = '';
-
-        [
-            { key: 'x', label: 'Cam X', min: -3, max: 3, step: 0.05 },
-            { key: 'y', label: 'Cam Y', min: 0.5, max: 5, step: 0.05 },
-            { key: 'z', label: 'Cam Z', min: 3, max: 10, step: 0.05 },
-            { key: 'lookY', label: 'Look Y', min: -1.5, max: 2, step: 0.05 },
-            { key: 'fov', label: 'FOV', min: 30, max: 60, step: 1 },
-            { key: 'modelScale', label: 'Scale', min: 0.8, max: 1.8, step: 0.01 },
-            { key: 'modelY', label: 'Car Y', min: -1.4, max: 0.6, step: 0.02 }
-        ].forEach(control => {
-            const row = document.createElement('div');
-            row.className = 'admin-row';
-
-            const label = document.createElement('label');
-            label.innerText = control.label;
-
-            const input = document.createElement('input');
-            input.type = 'range';
-            input.min = control.min;
-            input.max = control.max;
-            input.step = control.step;
-            input.value = cameraSettings[control.key];
-            input.dataset.key = control.key;
-
-            const value = document.createElement('span');
-            value.dataset.valueFor = control.key;
-            value.innerText = Number(cameraSettings[control.key]).toFixed(2);
-
-            input.addEventListener('input', () => {
-                cameraSettings[control.key] = Number(input.value);
-                value.innerText = Number(input.value).toFixed(2);
-                applyCameraSettings();
-                applyModelSettings();
-            });
-
-            row.appendChild(label);
-            row.appendChild(input);
-            row.appendChild(value);
-            container.appendChild(row);
-        });
-    }
-
-    function updateAdminControlValues() {
-        document.querySelectorAll('#camera-controls input').forEach(input => {
-            const key = input.dataset.key;
-            input.value = cameraSettings[key];
-
-            const value = document.querySelector(`[data-value-for="${key}"]`);
-            if (value) value.innerText = Number(cameraSettings[key]).toFixed(2);
-        });
-    }
-
-    function showLoader() {
-        const loader = document.getElementById('loader');
-        loader.style.display = 'flex';
-        loader.style.opacity = '1';
-    }
-
-    function hideLoader() {
-        const loader = document.getElementById('loader');
-        loader.style.opacity = '0';
-
-        setTimeout(() => {
-            loader.style.display = 'none';
-        }, 1000);
-    }
-
-    function onWindowResize() {
-        if (!hasSavedCameraSettings) {
-            cameraSettings = getResponsiveCameraSettings();
-            applyModelSettings();
-        }
-
-        applyCameraSettings();
-        renderer.setSize(window.innerWidth, window.innerHeight);
-        updateAdminControlValues();
-    }
-
-    function animate() {
-        requestAnimationFrame(animate);
-
-        if (autoModel) {
-            if (autoRotate) {
-                autoModel.rotation.y += 0.003;
-            } else {
-                autoModel.rotation.y += rotationInput;
-            }
-
-            autoModel.traverse(node => {
-                const target = targets[node.name];
-                if (!target) return;
-
-                if (target.axis === 'z') {
-                    node.rotation.z += (target.val - node.rotation.z) * 0.1;
-                }
-
-                if (target.axis === 'x') {
-                    node.rotation.x += (target.val - node.rotation.x) * 0.1;
-                }
-            });
-        }
-
-        renderer.render(scene, camera);
-    }
+function animate() {
+    requestAnimationFrame(animate);
+    if (currentModelRoot) currentModelRoot.rotation.y += 0.003;
+    renderer.render(scene, camera);
+}
 </script>
+
 </body>
 </html>
