@@ -11,7 +11,7 @@
         #car-selector { display: flex; align-items: center; justify-content: center; gap: 40px; margin-bottom: 30px; }
         .arrow { font-size: 50px; cursor: pointer; padding: 20px; background: #f4f4f4; border-radius: 10px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
 
-        #select-btn, #back-btn, .action-btn {
+        #select-btn, .action-btn {
             padding: 20px 40px;
             font-size: 20px;
             cursor: pointer;
@@ -21,7 +21,7 @@
             border-radius: 10px;
         }
 
-        #fullscreen-btn {
+        .icon-btn {
             width: 58px;
             height: 58px;
             padding: 0;
@@ -36,6 +36,7 @@
             box-shadow: 0 2px 5px rgba(0,0,0,0.1);
         }
 
+        .button-icon,
         .fullscreen-icon {
             width: 31px;
             height: 31px;
@@ -72,8 +73,13 @@
 
     <div id="view-customizer" class="view">
         <div class="header-bar">
-            <button id="back-btn">Back</button>
-            <button id="fullscreen-btn" type="button" aria-label="Enter fullscreen" title="Fullscreen">
+            <button id="back-btn" class="icon-btn" type="button" aria-label="Back" title="Back">
+                <svg class="button-icon" viewBox="0 0 24 24">
+                    <path d="M15 6l-6 6 6 6" />
+                </svg>
+            </button>
+
+            <button id="fullscreen-btn" class="icon-btn" type="button" aria-label="Enter fullscreen" title="Fullscreen">
                 <svg class="fullscreen-icon icon-expand" viewBox="0 0 24 24">
                     <path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5" />
                 </svg>
@@ -82,8 +88,10 @@
                 </svg>
             </button>
         </div>
+
         <h1>Configurator</h1>
         <div id="sub-menu"><p>Choose an option below</p></div>
+
         <div class="bottom-nav">
             <div class="nav-icon" id="btn-color">Color</div>
             <div class="nav-icon" id="btn-doors">Doors</div>
