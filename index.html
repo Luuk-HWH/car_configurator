@@ -208,6 +208,8 @@
         applyCameraSettings();
 
         renderer = new THREE.WebGLRenderer({ antialias: true });
+        renderer.shadowMap.enabled = true;
+        renderer.shadowMap.type = THREE.PCFSoftShadowMap;
         renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
         renderer.setSize(window.innerWidth, window.innerHeight);
         renderer.outputEncoding = THREE.sRGBEncoding;
@@ -219,6 +221,12 @@
 
         const keyLight = new THREE.DirectionalLight(0xffffff, 1.4);
         keyLight.position.set(5, 8, 6);
+        keyLight.castShadow = true;
+        keyLight.shadow.mapSize.width = 2048;
+        keyLight.shadow.mapSize.height = 2048;
+        keyLight.shadow.camera.near = 0.5;
+        keyLight.shadow.camera.far = 50;
+        keyLight.shadow.bias = -0.0001;
         scene.add(keyLight);
 
         const fillLight = new THREE.DirectionalLight(0xffffff, 1.4);
@@ -228,6 +236,16 @@
         const frontLight = new THREE.DirectionalLight(0xffffff, 1.0);
         frontLight.position.set(0, 3, 8);
         scene.add(frontLight);
+
+        const ground = new THREE.Mesh(
+    new THREE.PlaneGeometry(200, 200),
+    new THREE.ShadowMaterial({ opacity: 0.25 })
+);
+
+ground.rotation.x = -Math.PI / 2;
+ground.position.y = -1;
+ground.receiveShadow = true;
+scene.add(ground);
 
         window.addEventListener('resize', onWindowResize);
 
@@ -282,6 +300,12 @@
 
                 currentModelRoot = gltf.scene;
                 currentModelRoot.scale.set(cameraSettings.modelScale, cameraSettings.modelScale, cameraSettings.modelScale);
+                currentModelRoot.traverse((node) => {
+    if (node.isMesh) {
+        node.castShadow = true;
+        node.receiveShadow = true;
+    }
+});
 
                 if (modelUrl.toLowerCase().includes('bugatti')) {
                     currentModelRoot.updateMatrixWorld(true);
